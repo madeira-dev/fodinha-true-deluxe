@@ -158,7 +158,9 @@ export class GameClient {
 
     if (message.type === 'REJECTED') {
       if (this.pendingJoin) {
-        this.pendingJoin.reject(new Error(message.error.message));
+        const failure = new Error(message.error.message) as Error & { code: string };
+        failure.code = message.error.code;
+        this.pendingJoin.reject(failure);
         this.pendingJoin = null;
         return;
       }

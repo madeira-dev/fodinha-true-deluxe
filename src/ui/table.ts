@@ -1,6 +1,7 @@
 import { isVisibleCard } from '../engine';
 import type { GameView, PlayerView, ViewCard } from '../engine';
 import type { LobbySnapshot } from '../host';
+import { t, tagLabel } from '../i18n';
 import { facedownStack, playingCard } from './card';
 import { el } from './dom';
 import { cardLabel, formatVisibleCard, phaseLabel } from './format';
@@ -119,8 +120,12 @@ function renderSeat(
     el(
       'div',
       { class: 'seat-stats' },
-      el('span', null, `Bid ${player.prediction === null ? '—' : String(player.prediction)}`),
-      el('span', null, `Tricks ${player.tricksWon}`),
+      el(
+        'span',
+        null,
+        t('bidStat', { value: player.prediction === null ? '—' : String(player.prediction) }),
+      ),
+      el('span', null, t('tricksStat', { value: player.tricksWon })),
     ),
     seat.isYou ? null : renderOpponentCards(player, view),
   );
@@ -133,7 +138,11 @@ function nameplate(name: string, tags: string[]): HTMLElement {
     { class: 'nameplate' },
     el('strong', null, name),
     chips.length > 0
-      ? el('div', { class: 'chips' }, ...chips.map((tag) => el('span', { class: `chip-tag ${tag}` }, tag)))
+      ? el(
+          'div',
+          { class: 'chips' },
+          ...chips.map((tag) => el('span', { class: `chip-tag ${tag}` }, tagLabel(tag))),
+        )
       : null,
   );
 }
@@ -142,7 +151,7 @@ function renderPenaltyTrack(word: string): HTMLElement {
   const letters = 'FODINHA'.split('');
   return el(
     'div',
-    { class: 'fodinha', 'aria-label': word ? `Penalty ${word}` : 'No penalty letters' },
+    { class: 'fodinha', 'aria-label': word ? t('penaltyLabel', { word }) : t('noPenalty') },
     ...letters.map((letter, index) =>
       el('span', { class: index < word.length ? 'lit' : 'dim' }, letter),
     ),
@@ -185,9 +194,7 @@ function renderCenter(
         el(
           'p',
           null,
-          view.firstRoundSpecialVisibility
-            ? 'You cannot see your card. Bid from the table.'
-            : 'How many tricks will you take?',
+          view.firstRoundSpecialVisibility ? t('hiddenBidPrompt') : t('bidPrompt'),
         ),
         el(
           'div',
@@ -204,14 +211,14 @@ function renderCenter(
     );
   } else if (view.phase === 'PREDICTION') {
     children.push(
-      el('p', { class: 'center-wait' }, `${nameOf(view, view.currentPlayerId)} is bidding…`),
+      el('p', { class: 'center-wait' }, t('isBidding', { name: nameOf(view, view.currentPlayerId) })),
     );
   } else if (view.phase === 'PLAYING' && !yourTurn) {
     children.push(
-      el('p', { class: 'center-wait' }, `${nameOf(view, view.currentPlayerId)} is playing…`),
+      el('p', { class: 'center-wait' }, t('isPlaying', { name: nameOf(view, view.currentPlayerId) })),
     );
   } else if (view.phase === 'PLAYING' && yourTurn) {
-    children.push(el('p', { class: 'center-wait' }, 'Play a card'));
+    children.push(el('p', { class: 'center-wait' }, t('playACard')));
   } else if (view.phase === 'SCORING' || view.phase === 'FINISHED') {
     children.push(renderScoreSheet(view, letterDeltas, handlers));
   }
@@ -271,9 +278,9 @@ function renderLastTrickNote(view: GameView): HTMLElement | null {
     return null;
   }
   if (last.tied) {
-    return el('p', { class: 'trick-note' }, 'Tied trick — nobody scores');
+    return el('p', { class: 'trick-note' }, t('tiedTrick'));
   }
-  return el('p', { class: 'trick-note' }, `${nameOf(view, last.winnerId)} takes the trick`);
+  return el('p', { class: 'trick-note' }, t('takesTrick', { name: nameOf(view, last.winnerId) }));
 }
 
 function renderScoreSheet(
@@ -284,7 +291,7 @@ function renderScoreSheet(
   return el(
     'div',
     { class: 'score-sheet' },
-    el('h2', null, view.phase === 'FINISHED' ? finishTitle(view) : 'Round results'),
+    el('h2', null, view.phase === 'FINISHED' ? finishTitle(view) : t('roundResults')),
     el(
       'ul',
       null,
@@ -294,29 +301,33 @@ function renderScoreSheet(
           player.prediction === null
             ? '—'
             : player.prediction === player.tricksWon
-              ? 'exact'
-              : `${delta > 0 ? '+' : ''}${delta} letter${delta === 1 ? '' : 's'}`;
+              ? t('exact')
+              : t(delta === 1 ? 'letterOne' : 'letterMany', { n: delta > 0 ? `+${delta}` : String(delta) });
         return el(
           'li',
           { class: player.eliminated ? 'eliminated' : '' },
           el('strong', null, player.displayName),
-          el('span', null, `bid ${player.prediction === null ? '—' : String(player.prediction)}`),
-          el('span', null, `won ${player.tricksWon}`),
+          el(
+            'span',
+            null,
+            t('bidWord', { value: player.prediction === null ? '—' : String(player.prediction) }),
+          ),
+          el('span', null, t('wonWord', { value: player.tricksWon })),
           el('span', { class: delta === 0 ? 'exact' : 'miss' }, result),
         );
       }),
     ),
     view.phase === 'SCORING'
-      ? el('button', { class: 'primary', click: () => handlers.onAdvance() }, 'Next round')
+      ? el('button', { class: 'primary', click: () => handlers.onAdvance() }, t('nextRound'))
       : null,
   );
 }
 
 function finishTitle(view: GameView): string {
   if (view.tied) {
-    return 'Everybody is out — tie';
+    return t('everybodyOut');
   }
-  return `${nameOf(view, view.winnerId)} wins`;
+  return t('playerWins', { name: nameOf(view, view.winnerId) });
 }
 
 function renderHandDock(view: GameView, handlers: GameTableHandlers): HTMLElement {
@@ -330,14 +341,14 @@ function renderHandDock(view: GameView, handlers: GameTableHandlers): HTMLElemen
       el(
         'h2',
         null,
-        view.firstRoundSpecialVisibility ? 'Your card is hidden' : 'Your hand',
+        view.firstRoundSpecialVisibility ? t('yourCardHidden') : t('yourHand'),
       ),
       el(
         'p',
         { class: 'muted' },
         view.phase === 'PLAYING' && canPlay
-          ? 'Choose a card'
-          : `${view.you.handCount} card${view.you.handCount === 1 ? '' : 's'}`,
+          ? t('chooseCard')
+          : t(view.you.handCount === 1 ? 'cardOne' : 'cardMany', { count: view.you.handCount }),
       ),
     ),
     el(
@@ -352,7 +363,7 @@ function renderHandDock(view: GameView, handlers: GameTableHandlers): HTMLElemen
           onPlay: () => handlers.onPlay(card.id),
         }),
       ),
-      view.you.hand.length === 0 ? el('p', { class: 'muted' }, 'No cards in hand') : null,
+      view.you.hand.length === 0 ? el('p', { class: 'muted' }, t('noCards')) : null,
     ),
   );
 }
@@ -368,26 +379,22 @@ function renderLobbyCenter(
   return el(
     'div',
     { class: 'felt-center lobby-center' },
-    el('p', { class: 'kicker' }, 'Table code'),
+    el('p', { class: 'kicker' }, t('tableCode')),
     roomCode
       ? el('p', { class: 'room-code' }, roomCode)
-      : el('h2', null, youAreOwner ? 'Your table' : 'Waiting for the host'),
-    el(
-      'p',
-      { class: 'muted' },
-      'Friends can join from the browser or the desktop app with this code.',
-    ),
+      : el('h2', null, youAreOwner ? t('yourTable') : t('waitingHost')),
+    el('p', { class: 'muted' }, t('lobbyHint')),
     el(
       'div',
       { class: 'actions' },
       roomCode
-        ? el('button', { class: 'ghost tiny', click: () => handlers.onCopy(roomCode) }, 'Copy code')
+        ? el('button', { class: 'ghost tiny', click: () => handlers.onCopy(roomCode) }, t('copyCode'))
         : null,
       invite && invite.shareUrl
         ? el(
             'button',
             { class: 'ghost tiny', click: () => handlers.onCopy(invite.shareUrl as string) },
-            'Copy link',
+            t('copyLink'),
           )
         : null,
     ),
@@ -395,8 +402,8 @@ function renderLobbyCenter(
       'div',
       { class: 'actions' },
       youAreOwner
-        ? el('button', { class: 'primary', click: () => handlers.onStart() }, 'Start match')
-        : el('p', { class: 'muted' }, 'Waiting for the host to start.'),
+        ? el('button', { class: 'primary', click: () => handlers.onStart() }, t('startMatch'))
+        : el('p', { class: 'muted' }, t('waitingHost')),
       youAreOwner && handlers.onOpenGuest
         ? el(
             'button',
@@ -407,7 +414,7 @@ function renderLobbyCenter(
                 }
               },
             },
-            'Open guest window',
+            t('openGuest'),
           )
         : null,
     ),
@@ -416,7 +423,7 @@ function renderLobbyCenter(
 
 function nameOf(view: GameView, playerId: string | null): string {
   if (!playerId) {
-    return 'Someone';
+    return t('someone');
   }
   const player = view.players.find((item) => item.id === playerId);
   return player ? player.displayName : playerId;
@@ -426,19 +433,31 @@ export function renderHud(
   title: string,
   subtitle: string,
   onLeave: (() => void) | null,
+  extras?: HTMLElement | null,
 ): HTMLElement {
   return el(
     'header',
     { class: 'hud' },
     el('div', null, el('p', { class: 'kicker' }, 'Fodinha'), el('h1', null, title)),
     el('p', { class: 'hud-sub' }, subtitle),
-    onLeave ? el('button', { class: 'ghost', click: () => onLeave() }, 'Leave') : el('span'),
+    el(
+      'div',
+      { class: 'hud-actions' },
+      extras || null,
+      onLeave ? el('button', { class: 'ghost', click: () => onLeave() }, t('leave')) : null,
+    ),
   );
 }
 
 export function hudSubtitle(view: GameView): string {
   const vira = view.vira ? formatVisibleCard(view.vira) : '—';
-  return `Round ${view.roundNumber} · ${view.cardsPerPlayer} card${
-    view.cardsPerPlayer === 1 ? '' : 's'
-  } · ${phaseLabel(view.phase)} · Vira ${vira}`;
+  const cards = t(view.cardsPerPlayer === 1 ? 'cardOne' : 'cardMany', {
+    count: view.cardsPerPlayer,
+  });
+  return t('hudLine', {
+    n: view.roundNumber,
+    cards,
+    phase: phaseLabel(view.phase),
+    vira,
+  });
 }

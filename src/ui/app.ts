@@ -1,5 +1,6 @@
 import { downloadLinks, inviteUrl, serverWsUrl } from '../config';
 import type { ClientSnapshot } from '../host';
+import { getLocale, initLocale, LOCALES, setLocale, t, translateError } from '../i18n';
 import { GameClient } from '../net/client';
 import { el } from './dom';
 import { queryRoomCode } from './format';
@@ -35,6 +36,7 @@ let root: HTMLElement;
 
 export function startApp(mount: HTMLElement): void {
   root = mount;
+  initLocale();
   render();
 }
 
@@ -44,22 +46,51 @@ function render(): void {
 }
 
 function renderTop(): HTMLElement {
+  const switcher = renderLocaleSwitch();
   if (state.snapshot && state.snapshot.kind === 'in_game') {
     return renderHud(
-      `Round ${state.snapshot.view.roundNumber}`,
+      t('roundTitle', { n: state.snapshot.view.roundNumber }),
       hudSubtitle(state.snapshot.view),
       () => {
         void leaveTable();
       },
+      switcher,
     );
   }
   if (state.role !== 'menu') {
-    const code = state.joinedRoomCode ? `Room ${state.joinedRoomCode}` : 'Online table';
-    return renderHud(state.role === 'host' ? 'Your table' : 'At the table', code, () => {
-      void leaveTable();
-    });
+    const code = state.joinedRoomCode
+      ? t('roomTitle', { code: state.joinedRoomCode })
+      : t('onlineTable');
+    return renderHud(
+      state.role === 'host' ? t('yourTable') : t('atTheTable'),
+      code,
+      () => {
+        void leaveTable();
+      },
+      switcher,
+    );
   }
-  return renderHud('Sit down', 'Play in the browser or the desktop app', null);
+  return renderHud(t('sitDown'), t('sitDownSub'), null, switcher);
+}
+
+function renderLocaleSwitch(): HTMLElement {
+  return el(
+    'div',
+    { class: 'locale-switch', 'aria-label': 'Language' },
+    ...LOCALES.map((locale) =>
+      el(
+        'button',
+        {
+          class: getLocale() === locale ? 'tiny locale-active' : 'ghost tiny',
+          click: () => {
+            setLocale(locale);
+            render();
+          },
+        },
+        locale === 'pt-BR' ? 'PT' : 'EN',
+      ),
+    ),
+  );
 }
 
 function renderError(): HTMLElement | null {
@@ -94,7 +125,7 @@ function renderBody(): HTMLElement {
     );
   }
   if (state.role !== 'menu') {
-    return el('p', { class: 'muted connecting' }, 'Connecting…');
+    return el('p', { class: 'muted connecting' }, t('connecting'));
   }
   return renderMenu();
 }
@@ -108,12 +139,12 @@ function renderMenu(): HTMLElement {
     el(
       'div',
       { class: 'plaque' },
-      el('p', { class: 'kicker' }, 'Online table'),
-      el('h2', null, 'Create a table, send the code, play from the browser or the app.'),
-      field('Your name', state.displayName, (value) => {
+      el('p', { class: 'kicker' }, t('onlineTable')),
+      el('h2', null, t('menuTitle')),
+      field(t('yourName'), state.displayName, (value) => {
         state.displayName = value;
       }),
-      field('Room code', state.roomCode, (value) => {
+      field(t('roomCode'), state.roomCode, (value) => {
         state.roomCode = value.toUpperCase();
       }),
       el(
@@ -122,15 +153,11 @@ function renderMenu(): HTMLElement {
         el(
           'button',
           { class: 'primary', disabled: state.busy, click: () => void createTable() },
-          'Create a table',
+          t('createTable'),
         ),
-        el('button', { disabled: state.busy, click: () => void joinTable() }, 'Join with code'),
+        el('button', { disabled: state.busy, click: () => void joinTable() }, t('joinWithCode')),
       ),
-      el(
-        'p',
-        { class: 'muted' },
-        'Works in this browser and in the desktop app. Same server, same tables.',
-      ),
+      el('p', { class: 'muted' }, t('menuHint')),
       hasDownloads ? renderDownloads(downloads) : null,
     ),
   );
@@ -140,7 +167,7 @@ function renderDownloads(links: { mac?: string; win?: string; linux?: string }):
   return el(
     'div',
     { class: 'downloads' },
-    el('p', { class: 'muted' }, 'Or download the app:'),
+    el('p', { class: 'muted' }, t('orDownload')),
     el(
       'div',
       { class: 'actions' },
@@ -210,7 +237,7 @@ async function copyText(value: string): Promise<void> {
       // Fall through to the prompt below.
     }
   }
-  window.prompt('Copy this', value);
+  window.prompt(t('copyPrompt'), value);
 }
 
 function wait(ms: number): Promise<void> {
@@ -221,14 +248,14 @@ function wait(ms: number): Promise<void> {
 
 async function connectToServer(): Promise<GameClient> {
   const url = serverWsUrl();
-  let lastError: Error = new Error(`Could not connect to ${url}`);
+  let lastError: Error = new Error(t('errorConnect'));
   for (let attempt = 1; attempt <= 8; attempt += 1) {
     try {
       return await GameClient.connect(url);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       if (attempt < 8) {
-        state.error = 'Waking the table…';
+        state.error = t('wakingTable');
         render();
         await wait(2000);
       }
@@ -248,7 +275,7 @@ function sendCommand(message: Parameters<GameClient['send']>[0]): void {
 async function createTable(): Promise<void> {
   const name = state.displayName.trim();
   if (!name) {
-    state.error = 'Enter a name before creating a table.';
+    state.error = t('needNameCreate');
     render();
     return;
   }
@@ -259,7 +286,7 @@ async function createTable(): Promise<void> {
   try {
     await attachClient(name, 'create');
   } catch (error) {
-    state.error = error instanceof Error ? error.message : 'Could not create the table';
+    state.error = error instanceof Error ? translateError(error) : t('createFailed');
     state.role = 'menu';
     detachClient();
   } finally {
@@ -272,12 +299,12 @@ async function joinTable(): Promise<void> {
   const name = state.displayName.trim();
   const code = state.roomCode.trim();
   if (!name) {
-    state.error = 'Enter a name before joining.';
+    state.error = t('needNameJoin');
     render();
     return;
   }
   if (!code) {
-    state.error = 'Enter the table code.';
+    state.error = t('needRoomCode');
     render();
     return;
   }
@@ -288,7 +315,7 @@ async function joinTable(): Promise<void> {
   try {
     await attachClient(name, 'join', code);
   } catch (error) {
-    state.error = error instanceof Error ? error.message : 'Could not join the table';
+    state.error = error instanceof Error ? translateError(error) : t('joinFailed');
     state.role = 'menu';
     detachClient();
   } finally {
@@ -313,18 +340,18 @@ async function attachClient(
       render();
       return;
     }
-    state.error = event.error.message;
+    state.error = translateError(event.error);
     render();
   });
   client.onReject((error) => {
-    state.error = error.message;
+    state.error = translateError(error);
     render();
   });
   client.onClose(() => {
     if (state.role === 'menu') {
       return;
     }
-    state.error = 'Disconnected from the table.';
+    state.error = t('disconnected');
     state.snapshot = null;
     state.client = null;
     state.joinedRoomCode = null;
