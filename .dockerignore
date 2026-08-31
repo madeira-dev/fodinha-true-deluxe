@@ -1,0 +1,7 @@
+node_modules
+.git
+.vite
+out
+dist
+*.md
+fodinha-rules.md

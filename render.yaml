@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: fodinha
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build:online
+    startCommand: node dist/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
