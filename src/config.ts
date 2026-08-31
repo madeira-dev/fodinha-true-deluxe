@@ -23,11 +23,14 @@ export function publicSiteUrl(): string | null {
   return null;
 }
 
-export function downloadLinks(): { mac?: string; win?: string; linux?: string } {
+const GITHUB_LATEST =
+  'https://github.com/madeira-dev/fodinha-true-deluxe/releases/latest/download';
+
+export function downloadLinks(): { mac: string; win: string; linux: string } {
   return {
-    mac: readEnv('VITE_DOWNLOAD_MAC'),
-    win: readEnv('VITE_DOWNLOAD_WIN'),
-    linux: readEnv('VITE_DOWNLOAD_LINUX'),
+    mac: readEnv('VITE_DOWNLOAD_MAC') || `${GITHUB_LATEST}/Fodinha-mac.zip`,
+    win: readEnv('VITE_DOWNLOAD_WIN') || `${GITHUB_LATEST}/Fodinha-windows.zip`,
+    linux: readEnv('VITE_DOWNLOAD_LINUX') || `${GITHUB_LATEST}/Fodinha-linux.zip`,
   };
 }
 

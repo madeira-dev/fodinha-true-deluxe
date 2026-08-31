@@ -1,8 +1,8 @@
 {
-  "name": "fodinha-electron",
-  "productName": "fodinha-electron",
+  "name": "fodinha",
+  "productName": "Fodinha",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "Fodinha — mesa online de cartas",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {

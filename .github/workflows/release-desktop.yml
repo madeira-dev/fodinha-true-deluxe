@@ -1,0 +1,70 @@
+name: Release desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  VITE_SERVER_URL: wss://fodinha-wtdk.onrender.com
+  VITE_PUBLIC_URL: https://fodinha-wtdk.onrender.com
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact: Fodinha-mac.zip
+            glob: 'out/make/**/*.zip'
+          - os: windows-latest
+            artifact: Fodinha-windows.zip
+            glob: 'out/make/**/*.zip'
+          - os: ubuntu-latest
+            artifact: Fodinha-linux.zip
+            glob: 'out/make/**/*.zip'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run make
+      - name: Rename installer
+        shell: bash
+        run: |
+          mkdir -p release-files
+          file="$(find out/make -type f -name '*.zip' | head -n 1)"
+          if [ -z "$file" ]; then
+            echo "No zip found"
+            find out/make -type f
+            exit 1
+          fi
+          cp "$file" "release-files/${{ matrix.artifact }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: release-files/${{ matrix.artifact }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('desktop-{0}', github.run_number) }}
+          name: Fodinha ${{ github.ref_type == 'tag' && github.ref_name || format('build {0}', github.run_number) }}
+          generate_release_notes: true
+          files: artifacts/**/*.zip

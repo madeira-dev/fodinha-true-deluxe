@@ -63,7 +63,30 @@ VITE_SERVER_URL=wss://YOUR-APP.fly.dev
 VITE_PUBLIC_URL=https://YOUR-APP.fly.dev
 ```
 
-Build installers with `npm run make` and put the files on GitHub Releases. Then set `VITE_DOWNLOAD_MAC` / `VITE_DOWNLOAD_WIN` / `VITE_DOWNLOAD_LINUX` so the website shows download buttons.
+## Desktop downloads
+
+The website always shows macOS / Windows / Linux buttons. They point at GitHub Releases:
+
+`https://github.com/madeira-dev/fodinha-true-deluxe/releases/latest/download/Fodinha-mac.zip`
+(and `Fodinha-windows.zip`, `Fodinha-linux.zip`)
+
+Build and publish:
+
+1. In GitHub: **Actions → Release desktop → Run workflow**
+2. After it finishes, a release appears with the three zips
+3. Friends click the buttons on the website
+
+The desktop app is built with `VITE_SERVER_URL=wss://fodinha-wtdk.onrender.com`, so it uses the same online tables as the browser.
+
+**The repository must be public** (or the release files will 404 for people who are not logged into GitHub). GitHub does not serve private-release downloads anonymously.
+
+Local unsigned Mac build:
+
+```bash
+VITE_SERVER_URL=wss://fodinha-wtdk.onrender.com npm run make
+```
+
+The zip lands in `out/make/`.
 
 ## Tests
 

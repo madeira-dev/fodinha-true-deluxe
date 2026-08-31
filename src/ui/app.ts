@@ -132,7 +132,6 @@ function renderBody(): HTMLElement {
 
 function renderMenu(): HTMLElement {
   const downloads = downloadLinks();
-  const hasDownloads = Boolean(downloads.mac || downloads.win || downloads.linux);
   return el(
     'div',
     { class: 'welcome' },
@@ -158,12 +157,12 @@ function renderMenu(): HTMLElement {
         el('button', { disabled: state.busy, click: () => void joinTable() }, t('joinWithCode')),
       ),
       el('p', { class: 'muted' }, t('menuHint')),
-      hasDownloads ? renderDownloads(downloads) : null,
+      renderDownloads(downloads),
     ),
   );
 }
 
-function renderDownloads(links: { mac?: string; win?: string; linux?: string }): HTMLElement {
+function renderDownloads(links: { mac: string; win: string; linux: string }): HTMLElement {
   return el(
     'div',
     { class: 'downloads' },
@@ -171,9 +170,9 @@ function renderDownloads(links: { mac?: string; win?: string; linux?: string }):
     el(
       'div',
       { class: 'actions' },
-      links.mac ? el('a', { class: 'button-link', href: links.mac }, 'macOS') : null,
-      links.win ? el('a', { class: 'button-link', href: links.win }, 'Windows') : null,
-      links.linux ? el('a', { class: 'button-link', href: links.linux }, 'Linux') : null,
+      el('a', { class: 'button-link', href: links.mac, target: '_blank', rel: 'noreferrer' }, 'macOS'),
+      el('a', { class: 'button-link', href: links.win, target: '_blank', rel: 'noreferrer' }, 'Windows'),
+      el('a', { class: 'button-link', href: links.linux, target: '_blank', rel: 'noreferrer' }, 'Linux'),
     ),
   );
 }
