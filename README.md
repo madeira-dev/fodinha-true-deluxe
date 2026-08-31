@@ -41,7 +41,7 @@ The repo includes `render.yaml`. After you connect the GitHub repo in Render:
 2. Pick this repository
 3. Apply the `fodinha` web service (free plan)
 
-Or create a **Web Service** by hand: runtime Node, build `npm ci && npm run build:online`, start `node dist/server.js`, health check `/health`.
+Or create a **Web Service** by hand: runtime Node, build `npm ci --include=dev && npm run build:online`, start `node dist/server.js`, health check `/health`.
 
 The first visit after ~15 minutes idle can take about a minute to wake. After that, create a table and send friends the code.
 
