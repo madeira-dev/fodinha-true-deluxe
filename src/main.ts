@@ -1,9 +1,24 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { PRODUCTION_SITE } from './site';
 
 if (started) {
   app.quit();
+}
+
+function packagedSiteUrl(query?: Record<string, string>): string {
+  const raw =
+    typeof import.meta.env.VITE_PUBLIC_URL === 'string' && import.meta.env.VITE_PUBLIC_URL.trim()
+      ? import.meta.env.VITE_PUBLIC_URL.trim()
+      : PRODUCTION_SITE;
+  const url = new URL(raw);
+  if (query) {
+    Object.keys(query).forEach((key) => {
+      url.searchParams.set(key, query[key]);
+    });
+  }
+  return url.toString();
 }
 
 function loadRenderer(window: BrowserWindow, query?: Record<string, string>): void {
@@ -15,6 +30,11 @@ function loadRenderer(window: BrowserWindow, query?: Record<string, string>): vo
       });
     }
     window.loadURL(url.toString());
+    return;
+  }
+
+  if (app.isPackaged) {
+    window.loadURL(packagedSiteUrl(query));
     return;
   }
 

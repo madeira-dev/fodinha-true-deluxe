@@ -1,26 +1,26 @@
-import { DEFAULT_PORT } from './net/protocol';
+import { PRODUCTION_SITE, PRODUCTION_WS } from './site';
 
 export function serverWsUrl(): string {
-  const fromEnv = readEnv('VITE_SERVER_URL');
-  if (fromEnv) {
-    return fromEnv;
+  const fromEnv = import.meta.env.VITE_SERVER_URL;
+  if (typeof fromEnv === 'string' && fromEnv.trim()) {
+    return fromEnv.trim();
   }
   if (typeof location !== 'undefined' && location.protocol !== 'file:') {
     const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${scheme}//${location.host}`;
   }
-  return `ws://127.0.0.1:${DEFAULT_PORT}`;
+  return PRODUCTION_WS;
 }
 
 export function publicSiteUrl(): string | null {
-  const fromEnv = readEnv('VITE_PUBLIC_URL');
-  if (fromEnv) {
-    return fromEnv.replace(/\/$/, '');
+  const fromEnv = import.meta.env.VITE_PUBLIC_URL;
+  if (typeof fromEnv === 'string' && fromEnv.trim()) {
+    return fromEnv.trim().replace(/\/$/, '');
   }
   if (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0) {
     return location.origin;
   }
-  return null;
+  return PRODUCTION_SITE;
 }
 
 const GITHUB_LATEST =
@@ -28,9 +28,9 @@ const GITHUB_LATEST =
 
 export function downloadLinks(): { mac: string; win: string; linux: string } {
   return {
-    mac: readEnv('VITE_DOWNLOAD_MAC') || `${GITHUB_LATEST}/Fodinha-mac.zip`,
-    win: readEnv('VITE_DOWNLOAD_WIN') || `${GITHUB_LATEST}/Fodinha-windows.zip`,
-    linux: readEnv('VITE_DOWNLOAD_LINUX') || `${GITHUB_LATEST}/Fodinha-linux.zip`,
+    mac: envString('VITE_DOWNLOAD_MAC') || `${GITHUB_LATEST}/Fodinha-mac.zip`,
+    win: envString('VITE_DOWNLOAD_WIN') || `${GITHUB_LATEST}/Fodinha-windows.zip`,
+    linux: envString('VITE_DOWNLOAD_LINUX') || `${GITHUB_LATEST}/Fodinha-linux.zip`,
   };
 }
 
@@ -42,9 +42,8 @@ export function inviteUrl(roomCode: string): string | null {
   return `${site}/?room=${encodeURIComponent(roomCode)}`;
 }
 
-function readEnv(name: string): string | undefined {
-  const meta = import.meta as { env?: Record<string, string | undefined> };
-  const value = meta.env ? meta.env[name] : undefined;
+function envString(name: 'VITE_DOWNLOAD_MAC' | 'VITE_DOWNLOAD_WIN' | 'VITE_DOWNLOAD_LINUX'): string | undefined {
+  const value = import.meta.env[name];
   if (typeof value === 'string' && value.trim()) {
     return value.trim();
   }
