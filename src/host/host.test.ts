@@ -86,6 +86,14 @@ describe('lobby', () => {
     expect(latestSnapshot(anaEvents).kind).toBe('lobby');
   });
 
+  it('rejects a seventh player', () => {
+    const host = createHost();
+    ['a', 'b', 'c', 'd', 'e', 'f'].forEach((id) => {
+      host.join({ id, displayName: id });
+    });
+    expect(() => host.join({ id: 'g', displayName: 'Gabi' })).toThrow(/lobby is full/);
+  });
+
   it('removes a guest from the lobby and transfers ownership if the owner leaves', () => {
     const { host, ana, beto, betoEvents } = sitTwo();
     expect(host.handle(ana, { type: 'LEAVE' }).ok).toBe(true);

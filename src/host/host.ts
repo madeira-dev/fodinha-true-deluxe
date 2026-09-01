@@ -1,4 +1,4 @@
-import { applyAction, createMatch, projectView } from '../engine';
+import { applyAction, createMatch, MAX_PLAYERS, projectView } from '../engine';
 import type { Game, GameView } from '../engine';
 import type {
   AdvanceOptions,
@@ -13,8 +13,6 @@ import type {
   Seat,
   StartOptions,
 } from './types';
-
-const MAX_PLAYERS = 39;
 
 function fail(code: HostError['code'], message: string): HandleResult {
   return { ok: false, error: { code, message } };

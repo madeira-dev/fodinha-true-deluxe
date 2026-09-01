@@ -7,6 +7,7 @@ import {
   nextRoundDeal,
   shuffle,
 } from './deck';
+import { MAX_PLAYERS, MIN_PLAYERS } from './limits';
 import { applyRoundPenalty } from './scoring';
 import type {
   Action,
@@ -135,11 +136,11 @@ function dealRound(game: Game, overrideDeck?: Card[]): Game {
 }
 
 export function createMatch(options: CreateMatchOptions): Game {
-  if (!options.players || options.players.length < 2) {
-    throw new Error('A match needs at least 2 players');
+  if (!options.players || options.players.length < MIN_PLAYERS) {
+    throw new Error(`A match needs at least ${MIN_PLAYERS} players`);
   }
-  if (options.players.length > 39) {
-    throw new Error('A match cannot have more than 39 players');
+  if (options.players.length > MAX_PLAYERS) {
+    throw new Error(`A match cannot have more than ${MAX_PLAYERS} players`);
   }
 
   const seen = new Set<string>();

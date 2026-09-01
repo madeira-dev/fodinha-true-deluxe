@@ -11,6 +11,7 @@ export {
   SUITS,
   SUIT_STRENGTH,
 } from './deck';
+export { MAX_PLAYERS, MIN_PLAYERS } from './limits';
 export { applyAction, createMatch } from './reducer';
 export { applyRoundPenalty, MAX_PENALTY, penaltyWord, PENALTY_WORD } from './scoring';
 export { isVisibleCard, projectView } from './view';

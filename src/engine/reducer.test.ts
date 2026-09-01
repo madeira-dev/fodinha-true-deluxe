@@ -61,6 +61,14 @@ describe('createMatch', () => {
       /at least 2 players/,
     );
   });
+
+  it('rejects a table with more than 6 players', () => {
+    const players = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((id) => ({
+      id,
+      displayName: id,
+    }));
+    expect(() => createMatch({ players })).toThrow(/more than 6 players/);
+  });
 });
 
 describe('predictions', () => {
