@@ -47,19 +47,55 @@ describe('resolveTrick', () => {
     ).toEqual({ winnerId: 'b', tied: false });
   });
 
-  it('ties when two non-manilha cards share the highest rank', () => {
+  it('cancels matching non-manilha ranks so a lower unique card can win', () => {
     expect(
       resolveTrick(
-        [play('a', 'A', 'diamonds'), play('b', 'A', 'clubs'), play('c', 'K', 'hearts')],
+        [
+          play('a', '5', 'diamonds'),
+          play('b', '3', 'clubs'),
+          play('c', '3', 'hearts'),
+          play('d', '3', 'spades'),
+        ],
+        'Q',
+      ),
+    ).toEqual({ winnerId: 'a', tied: false });
+  });
+
+  it('lets the strongest remaining unique rank win after amarrar', () => {
+    expect(
+      resolveTrick(
+        [
+          play('a', 'A', 'diamonds'),
+          play('b', 'A', 'clubs'),
+          play('c', 'K', 'hearts'),
+        ],
+        '5',
+      ),
+    ).toEqual({ winnerId: 'c', tied: false });
+  });
+
+  it('ties when every non-manilha rank amarra', () => {
+    expect(
+      resolveTrick([play('a', '2', 'clubs'), play('b', '2', 'diamonds')], '5'),
+    ).toEqual({ winnerId: null, tied: true });
+
+    expect(
+      resolveTrick(
+        [
+          play('a', '3', 'diamonds'),
+          play('b', '3', 'spades'),
+          play('c', '7', 'hearts'),
+          play('d', '7', 'clubs'),
+        ],
         '5',
       ),
     ).toEqual({ winnerId: null, tied: true });
   });
 
-  it('does not use suit to break a non-manilha tie', () => {
+  it('does not use suit to break a non-manilha comparison', () => {
     expect(
-      resolveTrick([play('a', '2', 'clubs'), play('b', '2', 'diamonds')], '5'),
-    ).toEqual({ winnerId: null, tied: true });
+      resolveTrick([play('a', 'K', 'clubs'), play('b', 'A', 'diamonds')], '5'),
+    ).toEqual({ winnerId: 'b', tied: false });
   });
 
   it('wraps manilha from 3 to 4', () => {

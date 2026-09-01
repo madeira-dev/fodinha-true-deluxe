@@ -26,20 +26,24 @@ export function resolveTrick(plays: TrickPlay[], manilhaRank: Rank): TrickResult
     return { winnerId: best.playerId, tied: false };
   }
 
-  let bestRank = plays[0].card.rank;
-  let bestStrength = RANK_STRENGTH[bestRank];
-  for (let i = 1; i < plays.length; i += 1) {
-    const strength = RANK_STRENGTH[plays[i].card.rank];
-    if (strength > bestStrength) {
-      bestRank = plays[i].card.rank;
-      bestStrength = strength;
-    }
+  const countByRank: Partial<Record<Rank, number>> = {};
+  for (let i = 0; i < plays.length; i += 1) {
+    const rank = plays[i].card.rank;
+    countByRank[rank] = (countByRank[rank] || 0) + 1;
   }
 
-  const top = plays.filter((play) => play.card.rank === bestRank);
-  if (top.length > 1) {
+  // Matching non-manilha ranks amarram: the whole rank drops out.
+  const remaining = plays.filter((play) => (countByRank[play.card.rank] || 0) === 1);
+  if (remaining.length === 0) {
     return { winnerId: null, tied: true };
   }
 
-  return { winnerId: top[0].playerId, tied: false };
+  let best = remaining[0];
+  for (let i = 1; i < remaining.length; i += 1) {
+    if (RANK_STRENGTH[remaining[i].card.rank] > RANK_STRENGTH[best.card.rank]) {
+      best = remaining[i];
+    }
+  }
+
+  return { winnerId: best.playerId, tied: false };
 }

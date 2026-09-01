@@ -48,6 +48,7 @@ function view(overrides: Partial<GameView> = {}): GameView {
     firstRoundSpecialVisibility: true,
     winnerId: null,
     tied: false,
+    letterStake: 1,
     legalPredictions: [0, 1],
     playableCardIds: [],
     ...overrides,

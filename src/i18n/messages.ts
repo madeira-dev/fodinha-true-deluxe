@@ -76,6 +76,8 @@ export interface Messages {
   phaseScoring: string;
   phaseFinished: string;
   hudLine: string;
+  roundStakeOne: string;
+  roundStakeMany: string;
   faceDownCard: string;
   cardOf: string;
   suitDiamonds: string;
@@ -150,7 +152,7 @@ export const ptBR: Messages = {
   isBidding: '{name} está dando o palpite…',
   isPlaying: '{name} está jogando…',
   playACard: 'Jogue uma carta',
-  tiedTrick: 'Vaza empatada — ninguém pontua',
+  tiedTrick: 'As cartas amarraram — ninguém pontua',
   takesTrick: '{name} leva a vaza',
   roundResults: 'Resultado da rodada',
   exact: 'exato',
@@ -180,7 +182,9 @@ export const ptBR: Messages = {
   phasePlaying: 'Jogando',
   phaseScoring: 'Fim da rodada',
   phaseFinished: 'Fim da partida',
-  hudLine: 'Rodada {n} · {cards} · {phase} · Vira {vira}',
+  hudLine: 'Rodada {n} · {cards} · {phase} · Vira {vira} · {stake}',
+  roundStakeOne: 'Vale 1 letra',
+  roundStakeMany: 'Vale {n} letras',
   faceDownCard: 'Carta virada',
   cardOf: '{rank} de {suit}',
   suitDiamonds: 'ouros',
@@ -255,7 +259,7 @@ export const en: Messages = {
   isBidding: '{name} is bidding…',
   isPlaying: '{name} is playing…',
   playACard: 'Play a card',
-  tiedTrick: 'Tied trick — nobody scores',
+  tiedTrick: 'The cards cancelled each other — nobody scores',
   takesTrick: '{name} takes the trick',
   roundResults: 'Round results',
   exact: 'exact',
@@ -285,7 +289,9 @@ export const en: Messages = {
   phasePlaying: 'Playing',
   phaseScoring: 'Round over',
   phaseFinished: 'Match over',
-  hudLine: 'Round {n} · {cards} · {phase} · Vira {vira}',
+  hudLine: 'Round {n} · {cards} · {phase} · Vira {vira} · {stake}',
+  roundStakeOne: 'Worth 1 letter',
+  roundStakeMany: 'Worth {n} letters',
   faceDownCard: 'Face-down card',
   cardOf: '{rank} of {suit}',
   suitDiamonds: 'diamonds',

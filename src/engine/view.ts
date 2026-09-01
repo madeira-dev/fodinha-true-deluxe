@@ -102,6 +102,7 @@ export function projectView(game: Game, playerId: string): GameView {
     firstRoundSpecialVisibility: game.firstRoundSpecialVisibility,
     winnerId: game.winnerId,
     tied: game.tied,
+    letterStake: game.letterStake < 1 ? 1 : game.letterStake,
     legalPredictions,
     playableCardIds,
   };

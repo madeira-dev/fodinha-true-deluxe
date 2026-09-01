@@ -447,13 +447,28 @@ Compare cards using the normal rank order:
 4 < 5 < 6 < 7 < Q < J < K < A < 2 < 3
 ```
 
-Suit does not break a tie between normal cards.
+Suit does not affect strength for normal cards.
 
-If exactly one player has the highest rank, that player wins the trick.
+If two or more cards share the same rank, those cards **amarram**. Every card of that rank is cancelled and ignored for the rest of the trick.
 
-If two or more players share the highest rank, the trick is tied and **nobody wins it**.
+After cancelling every rank that appeared more than once, compare only the remaining unique cards.
 
-Example:
+- If exactly one card remains, that player wins the trick.
+- If two or more unique ranks remain, the strongest remaining rank wins.
+- If no cards remain, the trick is tied and **nobody wins it**.
+
+Example — cancelled high cards:
+
+```text
+Player A: 5♦
+Player B: 3♣
+Player C: 3♥
+Player D: 3♠
+```
+
+Assuming `3` is not manilha, the three `3`s amarram and cancel. The `5` is the only card left, so Player A wins.
+
+Example — a weaker leftover after a pair cancels:
 
 ```text
 Player A: A♦
@@ -461,16 +476,47 @@ Player B: A♣
 Player C: K♥
 ```
 
-Assuming Aces are not manilha, the highest rank is `A`, but two players share it. The trick is tied and nobody gains a trick.
+The Aces amarram and cancel. The `K` remains, so Player C wins.
+
+Example — everything cancels:
+
+```text
+Player A: 2♣
+Player B: 2♦
+```
+
+No unique card remains. The trick is tied and nobody gains a trick.
 
 ---
 
 ## 12. End-of-Round Scoring
 
-At the end of the round, calculate each active player's penalty independently.
+Each round has a **letter stake**. It starts at `1`.
+
+At the end of the round, calculate each active player's penalty independently:
 
 ```text
-roundPenalty = abs(predictedTricks - tricksWon)
+roundPenalty = abs(predictedTricks - tricksWon) * letterStake
+```
+
+If every active player hits their prediction exactly, the round is considered tied for letters. Nobody receives letters, and the next round's stake increases by 1:
+
+```text
+1 -> 2 -> 3 -> ...
+```
+
+The stake keeps accumulating until a round is not tied (at least one player misses). Then letters are applied using the current stake, and the stake resets to `1`.
+
+Examples:
+
+- Round 1 everyone exact → next round is worth 2 letters per missed vaza.
+- Round 2 also everyone exact → next round is worth 3.
+- Round 3 a player misses by 1 → they receive 3 letters, and the following round is worth 1 again.
+
+At the end of the round, if a player misses:
+
+```text
+roundPenalty = abs(predictedTricks - tricksWon) * letterStake
 ```
 
 If:
@@ -804,6 +850,7 @@ The implementation must preserve these rules:
 3. A played card is removed from that player's hand.
 4. A player can win at most one point (`tricksWon += 1`) per trick.
 5. A tied trick gives a trick to nobody.
+5a. Non-manilha cards of the same rank amarram: that entire rank is cancelled, then the strongest remaining unique card wins. If nothing remains, the trick is tied.
 6. Every manilha beats every non-manilha.
 7. Only manilhas use suit to break strength ties.
 8. Round penalty is always:

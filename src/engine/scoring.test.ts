@@ -25,4 +25,9 @@ describe('applyRoundPenalty', () => {
     expect(applyRoundPenalty(6, 2, 0)).toBe(7);
     expect(applyRoundPenalty(5, 0, 4)).toBe(7);
   });
+
+  it('multiplies a miss by the letter stake from tied rounds', () => {
+    expect(applyRoundPenalty(0, 1, 0, 2)).toBe(2);
+    expect(applyRoundPenalty(1, 2, 0, 3)).toBe(7);
+  });
 });

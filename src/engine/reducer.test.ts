@@ -145,7 +145,7 @@ describe('playing tricks', () => {
       [
         cardOf('A', 'diamonds'),
         cardOf('A', 'clubs'),
-        cardOf('K', 'hearts'),
+        cardOf('A', 'hearts'),
         cardOf('4', 'spades'),
       ],
     );
@@ -272,6 +272,38 @@ describe('scoring and elimination', () => {
 
     expect(player(game, 'a').penaltyCount).toBe(0);
     expect(player(game, 'b').penaltyCount).toBe(0);
+    expect(game.letterStake).toBe(2);
+  });
+
+  it('makes the next round worth one extra letter after a fully exact round', () => {
+    let game = deal(twoPlayers, [
+      cardOf('3', 'spades'),
+      cardOf('4', 'hearts'),
+      cardOf('5', 'clubs'),
+    ]);
+    game = predictAll(game, { a: 0, b: 1 });
+    game = playOutRound(game);
+    expect(game.letterStake).toBe(2);
+
+    game = apply(game, {
+      type: 'ADVANCE',
+      deck: pullToFront(createDeck(), [
+        cardOf('4', 'diamonds'),
+        cardOf('3', 'spades'),
+        cardOf('5', 'hearts'),
+        cardOf('2', 'clubs'),
+        cardOf('7', 'clubs'),
+      ]),
+    });
+    expect(game.letterStake).toBe(2);
+    game = predictAll(game, { a: 0, b: 1 });
+    game = playOutRound(game);
+
+    expect(player(game, 'b').tricksWon).toBe(2);
+    expect(player(game, 'a').tricksWon).toBe(0);
+    expect(player(game, 'a').penaltyCount).toBe(0);
+    expect(player(game, 'b').penaltyCount).toBe(2);
+    expect(game.letterStake).toBe(1);
   });
 
   it('penalizes both over- and under-performing', () => {

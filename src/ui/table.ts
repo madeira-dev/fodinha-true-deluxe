@@ -454,10 +454,15 @@ export function hudSubtitle(view: GameView): string {
   const cards = t(view.cardsPerPlayer === 1 ? 'cardOne' : 'cardMany', {
     count: view.cardsPerPlayer,
   });
+  const stake =
+    view.letterStake > 1
+      ? t('roundStakeMany', { n: view.letterStake })
+      : t('roundStakeOne');
   return t('hudLine', {
     n: view.roundNumber,
     cards,
     phase: phaseLabel(view.phase),
     vira,
+    stake,
   });
 }

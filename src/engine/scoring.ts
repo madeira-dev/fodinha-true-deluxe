@@ -10,6 +10,8 @@ export function applyRoundPenalty(
   current: number,
   predicted: number,
   tricksWon: number,
+  letterStake = 1,
 ): number {
-  return Math.min(MAX_PENALTY, current + Math.abs(predicted - tricksWon));
+  const stake = letterStake < 1 ? 1 : letterStake;
+  return Math.min(MAX_PENALTY, current + Math.abs(predicted - tricksWon) * stake);
 }

@@ -58,6 +58,7 @@ export interface Game {
   firstRoundSpecialVisibility: boolean;
   winnerId: string | null;
   tied: boolean;
+  letterStake: number;
   rngSeed: number | null;
   nextCardSeq: number;
 }
@@ -135,6 +136,7 @@ export interface GameView {
   firstRoundSpecialVisibility: boolean;
   winnerId: string | null;
   tied: boolean;
+  letterStake: number;
   legalPredictions: number[] | null;
   playableCardIds: string[];
 }

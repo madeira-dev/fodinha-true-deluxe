@@ -187,6 +187,7 @@ export function createMatch(options: CreateMatchOptions): Game {
     firstRoundSpecialVisibility: true,
     winnerId: null,
     tied: false,
+    letterStake: 1,
     rngSeed: options.seed ?? null,
     nextCardSeq: 1,
   };
@@ -251,6 +252,9 @@ function scoreRound(game: Game): Game {
   game.currentTrick = null;
   game.currentPlayerId = null;
 
+  const stake = game.letterStake < 1 ? 1 : game.letterStake;
+  let anyMiss = false;
+
   for (let i = 0; i < game.players.length; i += 1) {
     const player = game.players[i];
     if (player.eliminated) {
@@ -259,16 +263,23 @@ function scoreRound(game: Game): Game {
     if (player.prediction === null) {
       throw new Error(`Missing prediction for ${player.id}`);
     }
+    const miss = Math.abs(player.prediction - player.tricksWon);
+    if (miss > 0) {
+      anyMiss = true;
+    }
     player.penaltyCount = applyRoundPenalty(
       player.penaltyCount,
       player.prediction,
       player.tricksWon,
+      stake,
     );
     if (player.penaltyCount >= 7) {
       player.eliminated = true;
       player.hand = [];
     }
   }
+
+  game.letterStake = anyMiss ? 1 : stake + 1;
 
   const remaining = game.players.filter((player) => !player.eliminated);
   if (remaining.length === 1) {
