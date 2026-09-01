@@ -174,6 +174,8 @@ function renderDownloads(links: { mac: string; win: string; linux: string }): HT
       el('a', { class: 'button-link', href: links.win, target: '_blank', rel: 'noreferrer' }, 'Windows'),
       el('a', { class: 'button-link', href: links.linux, target: '_blank', rel: 'noreferrer' }, 'Linux'),
     ),
+    el('p', { class: 'muted mac-hint' }, t('macOpenHint')),
+    el('code', { class: 'mac-command' }, t('macOpenCommand')),
   );
 }
 

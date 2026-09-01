@@ -14,6 +14,8 @@ export interface Messages {
   joinWithCode: string;
   menuHint: string;
   orDownload: string;
+  macOpenHint: string;
+  macOpenCommand: string;
   leave: string;
   connecting: string;
   wakingTable: string;
@@ -116,6 +118,9 @@ export const ptBR: Messages = {
   joinWithCode: 'Entrar com o código',
   menuHint: 'Funciona neste navegador e no aplicativo. Mesmo servidor, mesmas mesas.',
   orDownload: 'Ou baixe o aplicativo:',
+  macOpenHint:
+    'No Mac o sistema pode dizer que o app está danificado. Não está. É o bloqueio da Apple em apps sem certificado. No Terminal, rode isto e abra de novo:',
+  macOpenCommand: 'xattr -cr ~/Downloads/Fodinha.app',
   leave: 'Sair',
   connecting: 'Conectando…',
   wakingTable: 'Acordando a mesa…',
@@ -218,6 +223,9 @@ export const en: Messages = {
   joinWithCode: 'Join with code',
   menuHint: 'Works in this browser and in the desktop app. Same server, same tables.',
   orDownload: 'Or download the app:',
+  macOpenHint:
+    'On a Mac, the system may say the app is damaged. It is not. That is Apple blocking unsigned apps. In Terminal, run this and open it again:',
+  macOpenCommand: 'xattr -cr ~/Downloads/Fodinha.app',
   leave: 'Leave',
   connecting: 'Connecting…',
   wakingTable: 'Waking the table…',

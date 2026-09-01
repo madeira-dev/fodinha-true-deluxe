@@ -10,6 +10,7 @@ const config: ForgeConfig = {
     asar: true,
     name: 'Fodinha',
     executableName: 'Fodinha',
+    osxSign: false,
   },
   rebuildConfig: {},
   makers: [new MakerZIP({}), new MakerSquirrel({ name: 'Fodinha' })],

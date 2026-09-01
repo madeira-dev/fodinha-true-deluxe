@@ -47,7 +47,15 @@ jobs:
             find out/make -type f
             exit 1
           fi
-          cp "$file" "release-files/${{ matrix.artifact }}"
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            work="$(mktemp -d)"
+            unzip -q "$file" -d "$work"
+            cp scripts/abrir-fodinha.command "$work/Abrir Fodinha.command"
+            chmod +x "$work/Abrir Fodinha.command"
+            (cd "$work" && zip -qry "$OLDPWD/release-files/${{ matrix.artifact }}" .)
+          else
+            cp "$file" "release-files/${{ matrix.artifact }}"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}

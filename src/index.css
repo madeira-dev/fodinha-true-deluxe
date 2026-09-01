@@ -574,6 +574,18 @@ button:disabled {
   gap: 0.45rem;
 }
 
+.mac-hint {
+  margin-top: 0.35rem;
+}
+
+.mac-command {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  background: #140e0a;
+  overflow-x: auto;
+}
+
 code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
