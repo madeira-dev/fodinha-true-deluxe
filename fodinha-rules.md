@@ -388,6 +388,36 @@ Examples for a 3-card round:
 0, 1, 2, or 3
 ```
 
+### 9.1 Closing rule (from round 2)
+
+Starting with round 2, the sum of all active players' predictions **must not** equal the number of cards dealt to each player (the number of tricks in that round).
+
+The last player to predict is the one who must keep the total open:
+
+- they may choose any otherwise legal value that makes the sum **greater than** or **less than** the number of cards;
+- they may **not** choose the value that would make the sum exact.
+
+Round 1 has no such restriction. Any combination of `0` and `1` is legal.
+
+Examples for a 2-card round:
+
+```text
+Bids 1 and 0 -> sum 1, legal
+Bids 0 and 0 -> sum 0, legal
+Bids 1 and 2 -> sum 3, legal
+Bids 1 and 1 -> sum 2, illegal
+```
+
+Examples for a 3-card round:
+
+```text
+Existing bids 1 and 1, last player to go
+Legal last bids: 0, 2, or 3
+Illegal last bid: 1 (because 1 + 1 + 1 = 3)
+```
+
+When the card count later decreases (after the deck-size peak), the forbidden total is still the **current** number of cards, not the sequential match-round index.
+
 A prediction is locked once the trick-playing phase begins.
 
 The prediction represents an **exact target**, not a minimum.
@@ -772,6 +802,8 @@ In round 1, the valid values are therefore only:
 
 The prediction must be validated by the authoritative game state and locked once the playing phase begins.
 
+From round 2 onward, the last active player to predict is also forbidden from choosing the one remaining value that would make the sum of all predictions equal `cardsPerPlayer`.
+
 ### 18.2 Card-play action
 
 During each trick, the active player selects one legal card to play.
@@ -846,6 +878,7 @@ FINISHED
 The implementation must preserve these rules:
 
 1. `prediction` is always between `0` and `cardsPerPlayer`.
+1a. From round 2 onward, after every active player has predicted, the sum of those predictions is never equal to `cardsPerPlayer`. The last predictor is the player who must avoid that total.
 2. A player plays exactly one card per trick while active.
 3. A played card is removed from that player's hand.
 4. A player can win at most one point (`tricksWon += 1`) per trick.

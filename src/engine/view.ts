@@ -1,3 +1,4 @@
+import { legalPredictionValues } from './predictions';
 import { penaltyWord } from './scoring';
 import type {
   Game,
@@ -58,9 +59,7 @@ export function projectView(game: Game, playerId: string): GameView {
 
   const isYourTurn = game.currentPlayerId === playerId;
   const legalPredictions =
-    game.phase === 'PREDICTION' && isYourTurn
-      ? Array.from({ length: game.cardsPerPlayer + 1 }, (_, value) => value)
-      : null;
+    game.phase === 'PREDICTION' && isYourTurn ? legalPredictionValues(game) : null;
 
   const playableCardIds =
     game.phase === 'PLAYING' && isYourTurn

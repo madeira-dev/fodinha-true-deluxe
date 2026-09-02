@@ -6,6 +6,7 @@ describe('i18n', () => {
     setLocale('pt-BR');
     expect(t('createTable')).toBe('Criar mesa');
     expect(t('roundTitle', { n: 3 })).toBe('Rodada 3');
+    expect(t('bidCannotClose', { n: 2 })).toBe('A soma dos palpites não pode ser 2.');
     expect(t('cardOf', { rank: 'A', suit: t('suitSpades') })).toBe('A de espadas');
   });
 

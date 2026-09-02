@@ -105,4 +105,33 @@ describe('projectView', () => {
     expect(viewB.legalPredictions).toEqual([0, 1]);
     expect(viewA.legalPredictions).toBeNull();
   });
+
+  it('hides the last bid that would close the round-2 total', () => {
+    let game = round1Match();
+    game = predictAll(game, { a: 0, b: 0, c: 0 });
+    game = playCurrent(game);
+    game = playCurrent(game);
+    game = playCurrent(game);
+    game = apply(game, {
+      type: 'ADVANCE',
+      deck: pullToFront(createDeck(), [
+        cardOf('4', 'diamonds'),
+        cardOf('5', 'diamonds'),
+        cardOf('6', 'diamonds'),
+        cardOf('7', 'diamonds'),
+        cardOf('Q', 'diamonds'),
+        cardOf('J', 'diamonds'),
+        cardOf('K', 'clubs'),
+      ]),
+    });
+
+    expect(game.currentPlayerId).toBe('c');
+    game = apply(game, { type: 'PREDICT', playerId: 'c', value: 0 });
+    game = apply(game, { type: 'PREDICT', playerId: 'a', value: 1 });
+
+    const last = projectView(game, 'b');
+    const waiting = projectView(game, 'a');
+    expect(last.legalPredictions).toEqual([0, 2]);
+    expect(waiting.legalPredictions).toBeNull();
+  });
 });

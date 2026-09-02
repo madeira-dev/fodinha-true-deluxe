@@ -42,6 +42,7 @@ export interface Messages {
   noPenalty: string;
   hiddenBidPrompt: string;
   bidPrompt: string;
+  bidCannotClose: string;
   isBidding: string;
   isPlaying: string;
   playACard: string;
@@ -149,6 +150,7 @@ export const ptBR: Messages = {
   noPenalty: 'Nenhuma letra de penalidade',
   hiddenBidPrompt: 'Você não vê a sua carta. Dê o palpite olhando a mesa.',
   bidPrompt: 'Quantas vazas você vai fazer?',
+  bidCannotClose: 'A soma dos palpites não pode ser {n}.',
   isBidding: '{name} está dando o palpite…',
   isPlaying: '{name} está jogando…',
   playACard: 'Jogue uma carta',
@@ -256,6 +258,7 @@ export const en: Messages = {
   noPenalty: 'No penalty letters',
   hiddenBidPrompt: 'You cannot see your card. Bid from the table.',
   bidPrompt: 'How many tricks will you take?',
+  bidCannotClose: 'Bids cannot add up to {n}.',
   isBidding: '{name} is bidding…',
   isPlaying: '{name} is playing…',
   playACard: 'Play a card',

@@ -384,6 +384,16 @@ button:disabled {
   min-width: 2.4rem;
 }
 
+.bid-btn-forbidden {
+  text-decoration: line-through;
+}
+
+.bid-rule {
+  margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  color: #d8c49a;
+}
+
 .score-sheet ul,
 .join-list {
   list-style: none;

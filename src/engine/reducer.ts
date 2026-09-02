@@ -8,6 +8,7 @@ import {
   shuffle,
 } from './deck';
 import { MAX_PLAYERS, MIN_PLAYERS } from './limits';
+import { legalPredictionValues } from './predictions';
 import { applyRoundPenalty } from './scoring';
 import type {
   Action,
@@ -214,6 +215,12 @@ function applyPredict(game: Game, playerId: string, value: number): ApplyResult 
     return fail(
       'INVALID_PREDICTION',
       `Prediction must be an integer from 0 to ${game.cardsPerPlayer}`,
+    );
+  }
+  if (!legalPredictionValues(game).includes(value)) {
+    return fail(
+      'INVALID_PREDICTION',
+      `The last prediction cannot make the total equal to ${game.cardsPerPlayer}`,
     );
   }
 

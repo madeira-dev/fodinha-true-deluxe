@@ -187,6 +187,9 @@ function renderCenter(
   const children: Array<HTMLElement | null> = [renderVira(view)];
 
   if (view.phase === 'PREDICTION' && yourTurn && view.legalPredictions) {
+    const legal = new Set(view.legalPredictions);
+    const allValues = Array.from({ length: view.cardsPerPlayer + 1 }, (_, value) => value);
+    const forbidden = allValues.find((value) => !legal.has(value));
     children.push(
       el(
         'div',
@@ -199,14 +202,21 @@ function renderCenter(
         el(
           'div',
           { class: 'bid-row' },
-          ...view.legalPredictions.map((value) =>
-            el(
-              'button',
-              { class: 'bid-btn', click: () => handlers.onPredict(value) },
-              String(value),
-            ),
-          ),
+          ...allValues.map((value) => {
+            const allowed = legal.has(value);
+            const attrs: Record<string, string | boolean | ((event: Event) => void)> = {
+              class: allowed ? 'bid-btn' : 'bid-btn bid-btn-forbidden',
+              disabled: !allowed,
+            };
+            if (allowed) {
+              attrs.click = () => handlers.onPredict(value);
+            }
+            return el('button', attrs, String(value));
+          }),
         ),
+        forbidden === undefined
+          ? null
+          : el('p', { class: 'bid-rule' }, t('bidCannotClose', { n: forbidden })),
       ),
     );
   } else if (view.phase === 'PREDICTION') {

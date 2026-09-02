@@ -72,6 +72,49 @@ describe('renderGameTable', () => {
     expect(opponent?.textContent).toContain('♠');
     expect(root.innerHTML).not.toContain('"deck"');
     expect(root.querySelectorAll('.bid-btn')).toHaveLength(2);
+    expect(root.querySelector('.bid-rule')).toBeNull();
+  });
+
+  it('shows the last-player closing rule and disables the forbidden bid', () => {
+    const you = player({
+      id: 'a',
+      displayName: 'Ana',
+      hand: [
+        { id: 'c1', rank: '7', suit: 'hearts' },
+        { id: 'c2', rank: 'Q', suit: 'clubs' },
+      ],
+      handCount: 2,
+    });
+    const chosen: number[] = [];
+    const root = renderGameTable(
+      view({
+        you,
+        players: [you, player({ id: 'b', displayName: 'Beto', handCount: 2, prediction: 1 })],
+        roundNumber: 2,
+        cardsPerPlayer: 2,
+        firstRoundSpecialVisibility: false,
+        phase: 'PREDICTION',
+        currentPlayerId: 'a',
+        legalPredictions: [0, 2],
+      }),
+      'a',
+      {},
+      {
+        onPredict: (value) => {
+          chosen.push(value);
+        },
+        onPlay: () => undefined,
+        onAdvance: () => undefined,
+      },
+    );
+
+    const buttons = Array.from(root.querySelectorAll('.bid-btn')) as HTMLButtonElement[];
+    expect(buttons.map((button) => button.textContent)).toEqual(['0', '1', '2']);
+    expect(buttons[1].disabled).toBe(true);
+    expect(root.querySelector('.bid-rule')?.textContent).toContain('1');
+    buttons[1].click();
+    buttons[0].click();
+    expect(chosen).toEqual([0]);
   });
 
   it('does not reveal later-round opponent cards', () => {
