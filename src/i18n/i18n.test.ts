@@ -21,5 +21,6 @@ describe('i18n', () => {
     setLocale('pt-BR');
     expect(translateError({ code: 'ROOM_NOT_FOUND' })).toBe('Nenhuma mesa usa esse código.');
     expect(translateError({ code: 'NOT_YOUR_TURN' })).toBe('Não é a sua vez.');
+    expect(translateError({ code: 'LOCAL_SERVER_DOWN' })).toContain('4737');
   });
 });

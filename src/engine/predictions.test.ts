@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDeck, pullToFront } from './deck';
-import { apply, cardOf, playOutRound, predictAll, threePlayers, twoPlayers } from './test-helpers';
+import { apply, cardOf, finishDeal, playOutRound, predictAll, threePlayers, twoPlayers } from './test-helpers';
 import { forbiddenClosingPrediction, legalPredictionValues } from './predictions';
 import { applyAction, createMatch } from './reducer';
 import type { Game } from './types';
@@ -9,25 +9,29 @@ function deal(
   players: Array<{ id: string; displayName: string }>,
   top: Array<ReturnType<typeof cardOf>>,
 ): Game {
-  return createMatch({
-    players,
-    deck: pullToFront(createDeck(), top),
-  });
+  return finishDeal(
+    createMatch({
+      players,
+      deck: pullToFront(createDeck(), top),
+    }),
+  );
 }
 
 function advanceToRound2(game: Game): Game {
-  return apply(game, {
-    type: 'ADVANCE',
-    deck: pullToFront(createDeck(), [
-      cardOf('4', 'diamonds'),
-      cardOf('5', 'diamonds'),
-      cardOf('6', 'diamonds'),
-      cardOf('7', 'diamonds'),
-      cardOf('Q', 'diamonds'),
-      cardOf('J', 'diamonds'),
-      cardOf('K', 'clubs'),
-    ]),
-  });
+  return finishDeal(
+    apply(game, {
+      type: 'ADVANCE',
+      deck: pullToFront(createDeck(), [
+        cardOf('4', 'diamonds'),
+        cardOf('5', 'diamonds'),
+        cardOf('6', 'diamonds'),
+        cardOf('7', 'diamonds'),
+        cardOf('Q', 'diamonds'),
+        cardOf('J', 'diamonds'),
+        cardOf('K', 'clubs'),
+      ]),
+    }),
+  );
 }
 
 describe('closing prediction rule', () => {

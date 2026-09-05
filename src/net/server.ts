@@ -16,6 +16,7 @@ export interface GameServerOptions {
   port?: number;
   defaultSeed?: number;
   staticDir?: string;
+  skipDealAnimation?: boolean;
 }
 
 export interface GameServer {
@@ -222,7 +223,10 @@ function serveStatic(root: string, req: http.IncomingMessage, res: http.ServerRe
 export async function startGameServer(
   options: GameServerOptions = {},
 ): Promise<GameServer> {
-  const rooms = new RoomRegistry({ defaultSeed: options.defaultSeed });
+  const rooms = new RoomRegistry({
+    defaultSeed: options.defaultSeed,
+    skipDealAnimation: options.skipDealAnimation,
+  });
   const staticDir = options.staticDir
     ? path.resolve(options.staticDir)
     : undefined;

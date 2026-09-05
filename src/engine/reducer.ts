@@ -129,8 +129,8 @@ function dealRound(game: Game, overrideDeck?: Card[]): Game {
   game.completedTricks = [];
   game.currentTrick = null;
   game.firstRoundSpecialVisibility = game.roundNumber === 1;
-  game.phase = 'PREDICTION';
-  game.currentPlayerId = game.players[nextActiveIndex(game, game.dealerIndex)].id;
+  game.phase = 'DEALING';
+  game.currentPlayerId = null;
   game.winnerId = null;
   game.tied = false;
   return game;
@@ -194,6 +194,15 @@ export function createMatch(options: CreateMatchOptions): Game {
   };
 
   return dealRound(game, options.deck);
+}
+
+function applyFinishDeal(game: Game): ApplyResult {
+  if (game.phase !== 'DEALING') {
+    return fail('WRONG_PHASE', 'The deal has already finished');
+  }
+  game.phase = 'PREDICTION';
+  game.currentPlayerId = game.players[nextActiveIndex(game, game.dealerIndex)].id;
+  return ok(game);
 }
 
 function applyPredict(game: Game, playerId: string, value: number): ApplyResult {
@@ -399,6 +408,8 @@ export function applyAction(state: Game, action: Action): ApplyResult {
       return applyPlayCard(game, action.playerId, action.cardId);
     case 'ADVANCE':
       return applyAdvance(game, action.deck);
+    case 'FINISH_DEAL':
+      return applyFinishDeal(game);
     default: {
       const neverAction: never = action;
       return fail('WRONG_PHASE', `Unsupported action: ${JSON.stringify(neverAction)}`);

@@ -66,7 +66,8 @@ export interface Game {
 export type Action =
   | { type: 'PREDICT'; playerId: string; value: number }
   | { type: 'PLAY_CARD'; playerId: string; cardId: string }
-  | { type: 'ADVANCE'; deck?: Card[] };
+  | { type: 'ADVANCE'; deck?: Card[] }
+  | { type: 'FINISH_DEAL' };
 
 export type ErrorCode =
   | 'WRONG_PHASE'

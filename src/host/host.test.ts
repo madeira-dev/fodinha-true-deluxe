@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createDeck, isVisibleCard, pullToFront } from '../engine';
 import { cardOf } from '../engine/test-helpers';
 import { createHost } from './host';
@@ -32,8 +32,11 @@ function errorsOf(events: HostEvent[]) {
   return events.filter((event) => event.type === 'ERROR').map((event) => event.error);
 }
 
-function sitTwo() {
-  const host = createHost({ roomId: 'table-1' });
+function sitTwo(options: { skipDealAnimation?: boolean } = {}) {
+  const host = createHost({
+    roomId: 'table-1',
+    skipDealAnimation: options.skipDealAnimation !== false,
+  });
   const ana = host.join({ id: 'a', displayName: 'Ana' });
   const beto = host.join({ id: 'b', displayName: 'Beto' });
   const anaEvents: HostEvent[] = [];
@@ -241,5 +244,24 @@ describe('in-process clients', () => {
     const { host, ana } = sitTwo();
     startKnownRound1(host, ana);
     expect(() => host.join({ displayName: 'Carla' })).toThrow(/already started/);
+  });
+
+  it('keeps every client in DEALING until the host finishes the shared deal', () => {
+    vi.useFakeTimers();
+    const { host, ana, beto, anaEvents, betoEvents } = sitTwo({ skipDealAnimation: false });
+    expect(startKnownRound1(host, ana).ok).toBe(true);
+
+    expect(latestGame(anaEvents).view.phase).toBe('DEALING');
+    expect(latestGame(betoEvents).view.phase).toBe('DEALING');
+    expect(host.handle(beto, { type: 'PREDICT', value: 0 })).toMatchObject({
+      ok: false,
+      error: { code: 'WRONG_PHASE' },
+    });
+
+    vi.advanceTimersByTime(10_000);
+    expect(latestGame(anaEvents).view.phase).toBe('PREDICTION');
+    expect(latestGame(betoEvents).view.phase).toBe('PREDICTION');
+    expect(latestGame(anaEvents).view.currentPlayerId).toBe(beto);
+    vi.useRealTimers();
   });
 });

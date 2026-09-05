@@ -66,6 +66,7 @@ export function t(key: keyof Messages, vars?: Record<string, string | number>): 
 }
 
 const ERROR_KEYS: Record<string, keyof Messages> = {
+  LOCAL_SERVER_DOWN: 'errorLocalServer',
   WRONG_PHASE: 'errorWrongPhase',
   NOT_YOUR_TURN: 'errorNotYourTurn',
   INVALID_PREDICTION: 'errorInvalidPrediction',

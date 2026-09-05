@@ -35,10 +35,10 @@ export function seatSlots(count: number): SeatSlot[] {
   const slots: SeatSlot[] = [];
   for (let i = 0; i < count; i += 1) {
     const theta = (i / count) * Math.PI * 2;
-    const x = 50 + -Math.sin(theta) * 42;
-    const y = 50 + Math.cos(theta) * 34;
-    const innerX = 50 + -Math.sin(theta) * 16;
-    const innerY = 50 + Math.cos(theta) * 13;
+    const x = 50 + -Math.sin(theta) * 46;
+    const y = 50 + Math.cos(theta) * 38;
+    const innerX = 50 + -Math.sin(theta) * 18;
+    const innerY = 50 + Math.cos(theta) * 16;
     slots.push({
       offset: i,
       x,

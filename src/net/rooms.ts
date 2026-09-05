@@ -10,6 +10,7 @@ export interface Room {
 
 export interface RoomRegistryOptions {
   defaultSeed?: number;
+  skipDealAnimation?: boolean;
 }
 
 export function normalizeRoomCode(raw: string): string {
@@ -30,9 +31,11 @@ export function generateRoomCode(random: () => number = Math.random): string {
 export class RoomRegistry {
   private readonly rooms = new Map<string, Room>();
   private readonly defaultSeed: number | null;
+  private readonly skipDealAnimation: boolean;
 
   constructor(options: RoomRegistryOptions = {}) {
     this.defaultSeed = options.defaultSeed ?? null;
+    this.skipDealAnimation = Boolean(options.skipDealAnimation);
   }
 
   create(preferredCode?: string): Room {
@@ -49,6 +52,7 @@ export class RoomRegistry {
     const host = createHost({
       roomId: code,
       seed: this.defaultSeed === null ? undefined : this.defaultSeed,
+      skipDealAnimation: this.skipDealAnimation,
     });
     const room: Room = { code, host };
     this.rooms.set(code, room);

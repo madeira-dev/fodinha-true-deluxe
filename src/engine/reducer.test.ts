@@ -3,6 +3,7 @@ import { createDeck, pullToFront } from './deck';
 import {
   apply,
   cardOf,
+  finishDeal,
   playCurrent,
   playOutRound,
   player,
@@ -15,14 +16,38 @@ import { projectView } from './view';
 import type { Game } from './types';
 
 function deal(players: Array<{ id: string; displayName: string }>, top: Array<ReturnType<typeof cardOf>>, extra?: Partial<Parameters<typeof createMatch>[0]>): Game {
-  return createMatch({
-    players,
-    deck: pullToFront(createDeck(), top),
-    ...extra,
-  });
+  return finishDeal(
+    createMatch({
+      players,
+      deck: pullToFront(createDeck(), top),
+      ...extra,
+    }),
+  );
 }
 
 describe('createMatch', () => {
+  it('holds the table in DEALING until the deal is finished', () => {
+    const raw = createMatch({
+      players: twoPlayers,
+      deck: pullToFront(createDeck(), [
+        cardOf('A', 'spades'),
+        cardOf('3', 'hearts'),
+        cardOf('4', 'clubs'),
+      ]),
+    });
+
+    expect(raw.phase).toBe('DEALING');
+    expect(raw.currentPlayerId).toBeNull();
+    expect(applyAction(raw, { type: 'PREDICT', playerId: 'b', value: 0 })).toMatchObject({
+      ok: false,
+      error: { code: 'WRONG_PHASE' },
+    });
+
+    const game = finishDeal(raw);
+    expect(game.phase).toBe('PREDICTION');
+    expect(game.currentPlayerId).toBe('b');
+  });
+
   it('starts on round 1 with one card each, vira, and manilha', () => {
     const game = deal(twoPlayers, [
       cardOf('A', 'spades'),
@@ -214,16 +239,18 @@ describe('round 2 multi-trick flow', () => {
     game = playOutRound(game);
     expect(player(game, 'a').penaltyCount).toBe(0);
     expect(player(game, 'b').penaltyCount).toBe(0);
-    game = apply(game, {
-      type: 'ADVANCE',
-      deck: pullToFront(createDeck(), [
-        cardOf('A', 'diamonds'),
-        cardOf('A', 'clubs'),
-        cardOf('3', 'diamonds'),
-        cardOf('K', 'clubs'),
-        cardOf('4', 'hearts'),
-      ]),
-    });
+    game = finishDeal(
+      apply(game, {
+        type: 'ADVANCE',
+        deck: pullToFront(createDeck(), [
+          cardOf('A', 'diamonds'),
+          cardOf('A', 'clubs'),
+          cardOf('3', 'diamonds'),
+          cardOf('K', 'clubs'),
+          cardOf('4', 'hearts'),
+        ]),
+      }),
+    );
 
     expect(game.dealerIndex).toBe(1);
     expect(game.currentPlayerId).toBe('a');
@@ -399,7 +426,7 @@ describe('round progression', () => {
     ]);
     game = predictAll(game, { a: 0, b: 0, c: 1 });
     game = playOutRound(game);
-    game = apply(game, { type: 'ADVANCE' });
+    game = finishDeal(apply(game, { type: 'ADVANCE' }));
 
     expect(game.roundNumber).toBe(2);
     expect(game.cardsPerPlayer).toBe(2);

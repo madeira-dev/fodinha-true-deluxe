@@ -75,6 +75,22 @@ describe('renderGameTable', () => {
     expect(root.querySelector('.bid-rule')).toBeNull();
   });
 
+  it('hides bids and shows a shuffle deck while dealing', () => {
+    const root = renderGameTable(view(), 'a', {}, {
+      onPredict: () => undefined,
+      onPlay: () => undefined,
+      onAdvance: () => undefined,
+    }, { dealing: true });
+
+    expect(root.classList.contains('dealing')).toBe(true);
+    expect(root.querySelector('.bid-btn')).toBeNull();
+    expect(root.querySelector('.deal-deck')).not.toBeNull();
+    expect(root.querySelector('.deal-center')?.textContent).toContain('Embaralhando');
+    expect(root.querySelector('[data-player-id="b"]')).not.toBeNull();
+    expect(root.querySelector('[data-deal-target="a"]')).not.toBeNull();
+    expect(root.querySelector('[data-deal-target="b"]')).not.toBeNull();
+  });
+
   it('shows the last-player closing rule and disables the forbidden bid', () => {
     const you = player({
       id: 'a',
@@ -194,5 +210,151 @@ describe('renderGameTable', () => {
     const button = root.querySelector('.hand-fan .playing-card') as HTMLButtonElement;
     button.click();
     expect(played).toEqual(['c-play']);
+  });
+
+  it('flies a newly played card from the player toward the trick', () => {
+    const you = player({
+      id: 'a',
+      displayName: 'Ana',
+      hand: [{ id: 'c-keep', rank: '7', suit: 'hearts' }],
+      handCount: 1,
+    });
+    const root = renderGameTable(
+      view({
+        you,
+        players: [you, player({ id: 'b', displayName: 'Beto', handCount: 1 })],
+        firstRoundSpecialVisibility: false,
+        phase: 'PLAYING',
+        currentPlayerId: 'b',
+        currentTrick: {
+          leaderId: 'a',
+          plays: [{ playerId: 'a', card: { id: 'c-play', rank: '3', suit: 'clubs' } }],
+          winnerId: null,
+          tied: false,
+        },
+        legalPredictions: null,
+      }),
+      'a',
+      {},
+      {
+        onPredict: () => undefined,
+        onPlay: () => undefined,
+        onAdvance: () => undefined,
+      },
+      { arrivingCardIds: ['c-play'] },
+    );
+
+    const card = root.querySelector('.trick-card') as HTMLElement;
+    expect(card.classList.contains('arriving')).toBe(true);
+    expect(card.getAttribute('data-card-id')).toBe('c-play');
+    expect(card.style.getPropertyValue('--play-from-y')).toBe('108%');
+    expect(card.textContent).toContain('3');
+  });
+
+  it('keeps the last completed trick on the table so the final card can land', () => {
+    const you = player({ id: 'a', displayName: 'Ana', handCount: 0 });
+    const root = renderGameTable(
+      view({
+        you,
+        players: [you, player({ id: 'b', displayName: 'Beto', handCount: 0 })],
+        firstRoundSpecialVisibility: false,
+        phase: 'PLAYING',
+        currentTrick: { leaderId: 'a', plays: [], winnerId: null, tied: false },
+        completedTricks: [
+          {
+            leaderId: 'a',
+            plays: [
+              { playerId: 'a', card: { id: 'c1', rank: 'K', suit: 'hearts' } },
+              { playerId: 'b', card: { id: 'c2', rank: '7', suit: 'spades' } },
+            ],
+            winnerId: 'a',
+            tied: false,
+          },
+        ],
+        legalPredictions: null,
+      }),
+      'a',
+      {},
+      {
+        onPredict: () => undefined,
+        onPlay: () => undefined,
+        onAdvance: () => undefined,
+      },
+      { arrivingCardIds: ['c2'], showSettledTrick: true },
+    );
+
+    const cards = Array.from(root.querySelectorAll('.trick-card')) as HTMLElement[];
+    expect(cards.map((card) => card.getAttribute('data-card-id'))).toEqual(['c1', 'c2']);
+    expect(cards[0].classList.contains('arriving')).toBe(false);
+    expect(cards[1].classList.contains('arriving')).toBe(true);
+  });
+
+  it('clears a settled trick once the hold is over', () => {
+    const you = player({ id: 'a', displayName: 'Ana', handCount: 0 });
+    const root = renderGameTable(
+      view({
+        you,
+        players: [you, player({ id: 'b', displayName: 'Beto', handCount: 0 })],
+        firstRoundSpecialVisibility: false,
+        phase: 'PLAYING',
+        currentTrick: { leaderId: 'a', plays: [], winnerId: null, tied: false },
+        completedTricks: [
+          {
+            leaderId: 'a',
+            plays: [
+              { playerId: 'a', card: { id: 'c1', rank: 'K', suit: 'hearts' } },
+              { playerId: 'b', card: { id: 'c2', rank: '7', suit: 'spades' } },
+            ],
+            winnerId: 'a',
+            tied: false,
+          },
+        ],
+        legalPredictions: null,
+      }),
+      'a',
+      {},
+      {
+        onPredict: () => undefined,
+        onPlay: () => undefined,
+        onAdvance: () => undefined,
+      },
+    );
+
+    expect(root.querySelector('.trick-card')).toBeNull();
+  });
+
+  it('does not keep played cards on top of the round results', () => {
+    const you = player({ id: 'a', displayName: 'Ana', handCount: 0 });
+    const root = renderGameTable(
+      view({
+        you,
+        players: [you, player({ id: 'b', displayName: 'Beto', handCount: 0 })],
+        firstRoundSpecialVisibility: false,
+        phase: 'SCORING',
+        currentTrick: null,
+        completedTricks: [
+          {
+            leaderId: 'a',
+            plays: [
+              { playerId: 'a', card: { id: 'c1', rank: 'K', suit: 'hearts' } },
+              { playerId: 'b', card: { id: 'c2', rank: '7', suit: 'spades' } },
+            ],
+            winnerId: 'a',
+            tied: false,
+          },
+        ],
+        legalPredictions: null,
+      }),
+      'a',
+      {},
+      {
+        onPredict: () => undefined,
+        onPlay: () => undefined,
+        onAdvance: () => undefined,
+      },
+    );
+
+    expect(root.querySelector('.score-sheet')).not.toBeNull();
+    expect(root.querySelector('.trick-card')).toBeNull();
   });
 });

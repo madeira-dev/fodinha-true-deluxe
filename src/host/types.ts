@@ -8,6 +8,7 @@ export interface Seat {
 export interface CreateHostOptions {
   roomId?: string;
   seed?: number;
+  skipDealAnimation?: boolean;
 }
 
 export interface JoinOptions {

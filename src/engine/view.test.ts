@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDeck, pullToFront } from './deck';
-import { apply, cardOf, playCurrent, predictAll, threePlayers } from './test-helpers';
+import { apply, cardOf, finishDeal, playCurrent, predictAll, threePlayers } from './test-helpers';
 import { createMatch } from './reducer';
 import { isVisibleCard, projectView } from './view';
 
@@ -99,7 +99,7 @@ describe('projectView', () => {
   });
 
   it('only offers legal predictions on the current player\'s view', () => {
-    const game = round1Match();
+    const game = finishDeal(round1Match());
     const viewB = projectView(game, 'b');
     const viewA = projectView(game, 'a');
     expect(viewB.legalPredictions).toEqual([0, 1]);
@@ -112,18 +112,20 @@ describe('projectView', () => {
     game = playCurrent(game);
     game = playCurrent(game);
     game = playCurrent(game);
-    game = apply(game, {
-      type: 'ADVANCE',
-      deck: pullToFront(createDeck(), [
-        cardOf('4', 'diamonds'),
-        cardOf('5', 'diamonds'),
-        cardOf('6', 'diamonds'),
-        cardOf('7', 'diamonds'),
-        cardOf('Q', 'diamonds'),
-        cardOf('J', 'diamonds'),
-        cardOf('K', 'clubs'),
-      ]),
-    });
+    game = finishDeal(
+      apply(game, {
+        type: 'ADVANCE',
+        deck: pullToFront(createDeck(), [
+          cardOf('4', 'diamonds'),
+          cardOf('5', 'diamonds'),
+          cardOf('6', 'diamonds'),
+          cardOf('7', 'diamonds'),
+          cardOf('Q', 'diamonds'),
+          cardOf('J', 'diamonds'),
+          cardOf('K', 'clubs'),
+        ]),
+      }),
+    );
 
     expect(game.currentPlayerId).toBe('c');
     game = apply(game, { type: 'PREDICT', playerId: 'c', value: 0 });

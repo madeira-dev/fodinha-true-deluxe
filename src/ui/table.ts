@@ -13,6 +13,13 @@ export interface GameTableHandlers {
   onAdvance: () => void;
 }
 
+export interface GameTableRenderOptions {
+  dealing?: boolean;
+  justDealt?: boolean;
+  arrivingCardIds?: string[];
+  showSettledTrick?: boolean;
+}
+
 export interface LobbyInvite {
   roomCode: string;
   shareUrl: string | null;
@@ -29,20 +36,38 @@ export function renderGameTable(
   ownerId: string,
   letterDeltas: Record<string, number>,
   handlers: GameTableHandlers,
+  options: GameTableRenderOptions = {},
 ): HTMLElement {
   const seats = occupySeats(view.players, view.you.id);
+  const stageClass = [
+    'table-stage',
+    options.dealing ? 'dealing' : '',
+    options.justDealt ? 'just-dealt' : '',
+  ]
+    .filter((item) => item)
+    .join(' ');
   return el(
     'div',
-    { class: 'table-stage' },
+    { class: stageClass },
     el(
       'div',
-      { class: 'rail' },
+      { class: 'table-wrap' },
       el(
         'div',
-        { class: 'felt' },
-        ...seats.map((seat) => renderSeat(seat, view, ownerId)),
-        renderCenter(view, seats, letterDeltas, handlers),
-        ...renderTrickCards(view, seats),
+        { class: 'rail' },
+        el(
+          'div',
+          { class: 'felt' },
+          ...seats.map((seat) => renderSeat(seat, view, ownerId)),
+          ...renderDealTargets(seats, Boolean(options.dealing)),
+          renderCenter(view, seats, letterDeltas, handlers, Boolean(options.dealing)),
+          ...renderTrickCards(
+            view,
+            seats,
+            options.arrivingCardIds || [],
+            Boolean(options.showSettledTrick),
+          ),
+        ),
       ),
     ),
     renderHandDock(view, handlers),
@@ -60,25 +85,29 @@ export function renderLobbyTable(
     { class: 'table-stage lobby' },
     el(
       'div',
-      { class: 'rail' },
+      { class: 'table-wrap' },
       el(
         'div',
-        { class: 'felt' },
-        ...seats.map((seat) =>
-          el(
-            'div',
-            {
-              class: `seat ${seat.slot.region}${seat.isYou ? ' you' : ''}`,
-              style: `left:${seat.slot.x}%;top:${seat.slot.y}%`,
-            },
-            nameplate(seat.occupant.displayName, [
-              seat.isYou ? 'you' : '',
-              seat.occupant.id === snapshot.ownerId ? 'host' : '',
-              seat.occupant.connected ? '' : 'away',
-            ]),
+        { class: 'rail' },
+        el(
+          'div',
+          { class: 'felt' },
+          ...seats.map((seat) =>
+            el(
+              'div',
+              {
+                class: `seat ${seat.slot.region}${seat.isYou ? ' you' : ''}`,
+                style: `left:${seat.slot.x}%;top:${seat.slot.y}%`,
+              },
+              nameplate(seat.occupant.displayName, [
+                seat.isYou ? 'you' : '',
+                seat.occupant.id === snapshot.ownerId ? 'host' : '',
+                seat.occupant.connected ? '' : 'away',
+              ]),
+            ),
           ),
+          renderLobbyCenter(snapshot, invite, handlers),
         ),
-        renderLobbyCenter(snapshot, invite, handlers),
       ),
     ),
   );
@@ -113,6 +142,7 @@ function renderSeat(
     'div',
     {
       class: classes,
+      'data-player-id': player.id,
       style: `left:${seat.slot.x}%;top:${seat.slot.y}%`,
     },
     nameplate(player.displayName, tags),
@@ -182,8 +212,13 @@ function renderCenter(
   seats: Array<OccupiedSeat<PlayerView>>,
   letterDeltas: Record<string, number>,
   handlers: GameTableHandlers,
+  dealing = false,
 ): HTMLElement {
   const yourTurn = view.currentPlayerId === view.you.id;
+  if (dealing) {
+    return el('div', { class: 'felt-center' }, renderDealCenter(view));
+  }
+
   const children: Array<HTMLElement | null> = [renderVira(view)];
 
   if (view.phase === 'PREDICTION' && yourTurn && view.legalPredictions) {
@@ -240,6 +275,48 @@ function renderCenter(
   return el('div', { class: 'felt-center' }, ...children);
 }
 
+function renderDealTargets(
+  seats: Array<OccupiedSeat<PlayerView>>,
+  dealing: boolean,
+): HTMLElement[] {
+  if (!dealing) {
+    return [];
+  }
+  return seats
+    .filter((seat) => !seat.occupant.eliminated)
+    .map((seat) =>
+      el('div', {
+        class: 'deal-target',
+        'data-deal-target': seat.occupant.id,
+        style: `left:${seat.slot.innerX}%;top:${seat.slot.innerY}%`,
+      }),
+    );
+}
+
+function renderDealCenter(view: GameView): HTMLElement {
+  return el(
+    'div',
+    { class: 'deal-center' },
+    el(
+      'div',
+      { class: 'deal-deck', 'aria-hidden': 'true' },
+      playingCard({ id: 'deal-deck-0' }, { size: 'md' }),
+      playingCard({ id: 'deal-deck-1' }, { size: 'md' }),
+      playingCard({ id: 'deal-deck-2' }, { size: 'md' }),
+      playingCard({ id: 'deal-deck-3' }, { size: 'md' }),
+      playingCard({ id: 'deal-deck-4' }, { size: 'md' }),
+    ),
+    el(
+      'div',
+      { class: 'deal-vira' },
+      view.vira
+        ? playingCard(view.vira, { size: 'md', manilha: false })
+        : el('div', { class: 'playing-card md empty' }),
+    ),
+    el('p', { class: 'center-wait' }, t('dealPrompt')),
+  );
+}
+
 function renderVira(view: GameView): HTMLElement {
   return el(
     'div',
@@ -251,24 +328,62 @@ function renderVira(view: GameView): HTMLElement {
   );
 }
 
+export function visibleTrick(
+  view: GameView,
+  options: { showSettledTrick?: boolean } = {},
+): GameView['currentTrick'] {
+  if (view.currentTrick && view.currentTrick.plays.length > 0) {
+    return view.currentTrick;
+  }
+  if (view.phase !== 'PLAYING' || !options.showSettledTrick) {
+    return null;
+  }
+  const last = view.completedTricks[view.completedTricks.length - 1];
+  if (!last || last.plays.length === 0) {
+    return null;
+  }
+  return last;
+}
+
 function renderTrickCards(
   view: GameView,
   seats: Array<OccupiedSeat<PlayerView>>,
+  arrivingCardIds: string[],
+  showSettledTrick: boolean,
 ): HTMLElement[] {
-  const trick = view.currentTrick;
-  if (!trick || trick.plays.length === 0) {
+  const trick = visibleTrick(view, { showSettledTrick });
+  if (!trick) {
     return [];
   }
 
+  const arriving = new Set(arrivingCardIds);
+  const reduceMotion =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   return trick.plays.map((play) => {
     const seat = seatForPlayer(seats, play.playerId);
-    const left = seat ? seat.slot.innerX : 50;
-    const top = seat ? seat.slot.innerY : 50;
+    const toX = seat ? seat.slot.innerX : 50;
+    const toY = seat ? seat.slot.innerY : 50;
+    const fromX = seat ? (seat.isYou ? 50 : seat.slot.x) : 50;
+    const fromY = seat ? (seat.isYou ? 108 : seat.slot.y) : 50;
+    const flyIn = !reduceMotion && arriving.has(play.card.id);
+    const rot = (((play.playerId.charCodeAt(0) || 10) % 13) - 6);
     return el(
       'div',
       {
-        class: 'trick-card',
-        style: `left:${left}%;top:${top}%`,
+        class: flyIn ? 'trick-card arriving' : 'trick-card',
+        'data-card-id': play.card.id,
+        style: [
+          `left:${toX}%`,
+          `top:${toY}%`,
+          `--play-from-x:${fromX}%`,
+          `--play-from-y:${fromY}%`,
+          `--play-to-x:${toX}%`,
+          `--play-to-y:${toY}%`,
+          `--play-rot:${rot}deg`,
+        ].join(';'),
         title: `${nameOf(view, play.playerId)} · ${cardLabel(play.card)}`,
       },
       playingCard(play.card, {
@@ -459,7 +574,7 @@ export function renderHud(
   );
 }
 
-export function hudSubtitle(view: GameView): string {
+export function hudSubtitle(view: GameView, dealing = false): string {
   const vira = view.vira ? formatVisibleCard(view.vira) : '—';
   const cards = t(view.cardsPerPlayer === 1 ? 'cardOne' : 'cardMany', {
     count: view.cardsPerPlayer,
@@ -471,7 +586,7 @@ export function hudSubtitle(view: GameView): string {
   return t('hudLine', {
     n: view.roundNumber,
     cards,
-    phase: phaseLabel(view.phase),
+    phase: dealing ? t('phaseDealing') : phaseLabel(view.phase),
     vira,
     stake,
   });

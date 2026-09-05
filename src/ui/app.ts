@@ -1,10 +1,11 @@
-import { downloadLinks, inviteUrl, serverWsUrl } from '../config';
+import { downloadLinks, inviteUrl, isLocalServerUrl, serverWsUrl } from '../config';
 import type { ClientSnapshot } from '../host';
 import { getLocale, initLocale, LOCALES, setLocale, t, translateError } from '../i18n';
 import { GameClient } from '../net/client';
 import { el } from './dom';
 import { queryRoomCode } from './format';
-import { hudSubtitle, renderGameTable, renderHud, renderLobbyTable } from './table';
+import { playDealAnimation } from './deal';
+import { hudSubtitle, renderGameTable, renderHud, renderLobbyTable, visibleTrick } from './table';
 
 interface AppState {
   displayName: string;
@@ -17,6 +18,13 @@ interface AppState {
   snapshot: ClientSnapshot | null;
   livePenalties: Record<string, number>;
   letterDeltas: Record<string, number>;
+  dealKey: string | null;
+  dealStartedAt: number | null;
+  justDealt: boolean;
+  seenPlayIds: string[];
+  arrivingCardIds: string[];
+  showSettledTrick: boolean;
+  trickClearTimer: number | null;
 }
 
 const state: AppState = {
@@ -30,6 +38,13 @@ const state: AppState = {
   snapshot: null,
   livePenalties: {},
   letterDeltas: {},
+  dealKey: null,
+  dealStartedAt: null,
+  justDealt: false,
+  seenPlayIds: [],
+  arrivingCardIds: [],
+  showSettledTrick: false,
+  trickClearTimer: null,
 };
 
 let root: HTMLElement;
@@ -43,6 +58,11 @@ export function startApp(mount: HTMLElement): void {
 function render(): void {
   const next = el('div', { class: 'app' }, renderTop(), renderError(), renderBody());
   root.replaceChildren(next);
+  if (state.snapshot && state.snapshot.kind === 'in_game' && state.snapshot.view.phase === 'DEALING') {
+    const elapsed = state.dealStartedAt ? Date.now() - state.dealStartedAt : 0;
+    playDealAnimation(next, state.snapshot.view, Math.max(0, elapsed));
+  }
+  state.arrivingCardIds = [];
 }
 
 function renderTop(): HTMLElement {
@@ -50,7 +70,7 @@ function renderTop(): HTMLElement {
   if (state.snapshot && state.snapshot.kind === 'in_game') {
     return renderHud(
       t('roundTitle', { n: state.snapshot.view.roundNumber }),
-      hudSubtitle(state.snapshot.view),
+      hudSubtitle(state.snapshot.view, state.snapshot.view.phase === 'DEALING'),
       () => {
         void leaveTable();
       },
@@ -102,11 +122,22 @@ function renderError(): HTMLElement | null {
 
 function renderBody(): HTMLElement {
   if (state.snapshot && state.snapshot.kind === 'in_game') {
-    return renderGameTable(state.snapshot.view, state.snapshot.ownerId, state.letterDeltas, {
-      onPredict: (value) => sendCommand({ type: 'PREDICT', value }),
-      onPlay: (cardId) => sendCommand({ type: 'PLAY_CARD', cardId }),
-      onAdvance: () => sendCommand({ type: 'ADVANCE' }),
-    });
+    return renderGameTable(
+      state.snapshot.view,
+      state.snapshot.ownerId,
+      state.letterDeltas,
+      {
+        onPredict: (value) => sendCommand({ type: 'PREDICT', value }),
+        onPlay: (cardId) => sendCommand({ type: 'PLAY_CARD', cardId }),
+        onAdvance: () => sendCommand({ type: 'ADVANCE' }),
+      },
+      {
+        dealing: state.snapshot.view.phase === 'DEALING',
+        justDealt: state.justDealt,
+        arrivingCardIds: state.arrivingCardIds,
+        showSettledTrick: state.showSettledTrick,
+      },
+    );
   }
   if (state.snapshot && state.snapshot.kind === 'lobby') {
     const code = state.joinedRoomCode;
@@ -206,7 +237,10 @@ function rememberPenalties(snapshot: ClientSnapshot): void {
     return;
   }
 
-  const live = snapshot.view.phase === 'PREDICTION' || snapshot.view.phase === 'PLAYING';
+  const live =
+    snapshot.view.phase === 'DEALING' ||
+    snapshot.view.phase === 'PREDICTION' ||
+    snapshot.view.phase === 'PLAYING';
   if (live) {
     const next: Record<string, number> = {};
     snapshot.view.players.forEach((player) => {
@@ -249,18 +283,25 @@ function wait(ms: number): Promise<void> {
 
 async function connectToServer(): Promise<GameClient> {
   const url = serverWsUrl();
-  let lastError: Error = new Error(t('errorConnect'));
-  for (let attempt = 1; attempt <= 8; attempt += 1) {
+  const local = isLocalServerUrl(url);
+  const attempts = local ? 4 : 8;
+  let lastError: Error = new Error(local ? t('errorLocalServer') : t('errorConnect'));
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       return await GameClient.connect(url);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      if (attempt < 8) {
-        state.error = t('wakingTable');
+      if (attempt < attempts) {
+        state.error = local ? t('startingLocalTable') : t('wakingTable');
         render();
-        await wait(2000);
+        await wait(local ? 400 : 2000);
       }
     }
+  }
+  if (local) {
+    const failure = new Error(t('errorLocalServer')) as Error & { code: string };
+    failure.code = 'LOCAL_SERVER_DOWN';
+    throw failure;
   }
   throw lastError;
 }
@@ -335,6 +376,8 @@ async function attachClient(
   state.client = client;
   client.subscribe((event) => {
     if (event.type === 'SNAPSHOT') {
+      rememberDeal(event.snapshot);
+      rememberPlays(event.snapshot);
       state.snapshot = event.snapshot;
       rememberPenalties(event.snapshot);
       state.error = null;
@@ -356,6 +399,8 @@ async function attachClient(
     state.snapshot = null;
     state.client = null;
     state.joinedRoomCode = null;
+    clearDeal();
+    clearPlays();
     if (state.role === 'guest') {
       state.role = 'menu';
     }
@@ -382,6 +427,95 @@ function detachClient(): void {
   state.joinedRoomCode = null;
   state.livePenalties = {};
   state.letterDeltas = {};
+  clearDeal();
+  clearPlays();
+}
+
+function rememberDeal(snapshot: ClientSnapshot): void {
+  if (snapshot.kind !== 'in_game' || snapshot.view.phase !== 'DEALING') {
+    const wasDealing = state.snapshot && state.snapshot.kind === 'in_game' && state.snapshot.view.phase === 'DEALING';
+    state.justDealt = Boolean(wasDealing && snapshot.kind === 'in_game' && snapshot.view.phase === 'PREDICTION');
+    if (snapshot.kind !== 'in_game' || snapshot.view.phase !== 'PREDICTION') {
+      state.dealKey = null;
+      state.dealStartedAt = null;
+    }
+    return;
+  }
+
+  const key = `${snapshot.view.id}:${snapshot.view.roundNumber}`;
+  if (state.dealKey !== key) {
+    state.dealKey = key;
+    state.dealStartedAt = Date.now();
+    state.justDealt = false;
+  }
+}
+
+function clearDeal(): void {
+  state.justDealt = false;
+  state.dealKey = null;
+  state.dealStartedAt = null;
+}
+
+const TRICK_CLEAR_MS = 750;
+
+function clearPlays(): void {
+  if (state.trickClearTimer !== null) {
+    window.clearTimeout(state.trickClearTimer);
+    state.trickClearTimer = null;
+  }
+  state.seenPlayIds = [];
+  state.arrivingCardIds = [];
+  state.showSettledTrick = false;
+}
+
+function rememberPlays(snapshot: ClientSnapshot): void {
+  if (snapshot.kind !== 'in_game') {
+    clearPlays();
+    return;
+  }
+
+  const previous = state.snapshot;
+  if (
+    !previous ||
+    previous.kind !== 'in_game' ||
+    previous.view.id !== snapshot.view.id ||
+    previous.view.roundNumber !== snapshot.view.roundNumber
+  ) {
+    state.seenPlayIds = [];
+    state.showSettledTrick = false;
+  }
+
+  const seen = new Set(state.seenPlayIds);
+  const trick = visibleTrick(snapshot.view, { showSettledTrick: true });
+  const ids = trick ? trick.plays.map((play) => play.card.id) : [];
+  state.arrivingCardIds = ids.filter((id) => !seen.has(id));
+  state.seenPlayIds = Array.from(new Set(state.seenPlayIds.concat(ids)));
+
+  const prevCompleted =
+    previous && previous.kind === 'in_game' ? previous.view.completedTricks.length : 0;
+  const justSettled =
+    snapshot.view.phase === 'PLAYING' && snapshot.view.completedTricks.length > prevCompleted;
+
+  if (justSettled) {
+    state.showSettledTrick = true;
+    if (state.trickClearTimer !== null) {
+      window.clearTimeout(state.trickClearTimer);
+    }
+    state.trickClearTimer = window.setTimeout(() => {
+      state.trickClearTimer = null;
+      state.showSettledTrick = false;
+      render();
+    }, TRICK_CLEAR_MS);
+    return;
+  }
+
+  if (snapshot.view.currentTrick && snapshot.view.currentTrick.plays.length > 0) {
+    if (state.trickClearTimer !== null) {
+      window.clearTimeout(state.trickClearTimer);
+      state.trickClearTimer = null;
+    }
+    state.showSettledTrick = false;
+  }
 }
 
 async function leaveTable(): Promise<void> {

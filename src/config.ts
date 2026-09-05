@@ -12,6 +12,19 @@ export function serverWsUrl(): string {
   return PRODUCTION_WS;
 }
 
+export function isLocalServerUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url.includes('://') ? url : `ws://${url}`);
+    return (
+      parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '::1'
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function publicSiteUrl(): string | null {
   const fromEnv = import.meta.env.VITE_PUBLIC_URL;
   if (typeof fromEnv === 'string' && fromEnv.trim()) {

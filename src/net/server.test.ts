@@ -19,6 +19,7 @@ async function listen() {
   const server = await startGameServer({
     port: 0,
     defaultSeed: 42,
+    skipDealAnimation: true,
   });
   servers.push(server);
   return server;

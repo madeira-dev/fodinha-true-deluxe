@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { DEFAULT_PORT } from './net/protocol';
+import { startGameServer } from './net/server';
 import { PRODUCTION_SITE } from './site';
 
 if (started) {
@@ -69,8 +71,31 @@ function openGuestWindow(_event: Electron.IpcMainInvokeEvent, roomCode?: string)
 
 ipcMain.handle('window:open-guest', openGuestWindow);
 
+async function ensureLocalServer(): Promise<void> {
+  if (app.isPackaged) {
+    return;
+  }
+  try {
+    const server = await startGameServer({ port: DEFAULT_PORT });
+    process.stdout.write(`Fodinha local table on :${server.port}\n`);
+  } catch (error) {
+    const code =
+      error && typeof error === 'object' && 'code' in error
+        ? String((error as { code?: unknown }).code)
+        : '';
+    if (code === 'EADDRINUSE') {
+      return;
+    }
+    process.stderr.write(
+      `Local table server failed: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+  }
+}
+
 app.on('ready', () => {
-  createWindow();
+  void ensureLocalServer().then(() => {
+    createWindow();
+  });
 });
 
 app.on('window-all-closed', () => {

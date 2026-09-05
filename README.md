@@ -11,7 +11,13 @@ npm run dev
 
 Open [http://127.0.0.1:5173](http://127.0.0.1:5173). Create a table, send the code, join from another tab.
 
-The Electron app uses the same server:
+The Electron app starts that same local table if it is not already running:
+
+```bash
+npm start
+```
+
+Or run the table yourself and then the app:
 
 ```bash
 npm run server   # terminal 1

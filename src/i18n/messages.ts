@@ -19,6 +19,7 @@ export interface Messages {
   leave: string;
   connecting: string;
   wakingTable: string;
+  startingLocalTable: string;
   needNameCreate: string;
   needNameJoin: string;
   needRoomCode: string;
@@ -43,6 +44,7 @@ export interface Messages {
   hiddenBidPrompt: string;
   bidPrompt: string;
   bidCannotClose: string;
+  dealPrompt: string;
   isBidding: string;
   isPlaying: string;
   playACard: string;
@@ -86,6 +88,7 @@ export interface Messages {
   suitHearts: string;
   suitClubs: string;
   errorConnect: string;
+  errorLocalServer: string;
   errorGeneric: string;
   errorWrongPhase: string;
   errorNotYourTurn: string;
@@ -127,6 +130,7 @@ export const ptBR: Messages = {
   leave: 'Sair',
   connecting: 'Conectando…',
   wakingTable: 'Acordando a mesa…',
+  startingLocalTable: 'Subindo a mesa local…',
   needNameCreate: 'Digite um nome antes de criar a mesa.',
   needNameJoin: 'Digite um nome antes de entrar.',
   needRoomCode: 'Digite o código da mesa.',
@@ -151,6 +155,7 @@ export const ptBR: Messages = {
   hiddenBidPrompt: 'Você não vê a sua carta. Dê o palpite olhando a mesa.',
   bidPrompt: 'Quantas vazas você vai fazer?',
   bidCannotClose: 'A soma dos palpites não pode ser {n}.',
+  dealPrompt: 'Embaralhando e distribuindo…',
   isBidding: '{name} está dando o palpite…',
   isPlaying: '{name} está jogando…',
   playACard: 'Jogue uma carta',
@@ -194,6 +199,8 @@ export const ptBR: Messages = {
   suitHearts: 'copas',
   suitClubs: 'paus',
   errorConnect: 'Não foi possível conectar ao servidor.',
+  errorLocalServer:
+    'Não achei o servidor local na porta 4737. Rode npm run dev, ou npm run server numa outra janela.',
   errorGeneric: 'Algo deu errado.',
   errorWrongPhase: 'Essa ação não vale neste momento.',
   errorNotYourTurn: 'Não é a sua vez.',
@@ -235,6 +242,7 @@ export const en: Messages = {
   leave: 'Leave',
   connecting: 'Connecting…',
   wakingTable: 'Waking the table…',
+  startingLocalTable: 'Starting the local table…',
   needNameCreate: 'Enter a name before creating a table.',
   needNameJoin: 'Enter a name before joining.',
   needRoomCode: 'Enter the table code.',
@@ -259,6 +267,7 @@ export const en: Messages = {
   hiddenBidPrompt: 'You cannot see your card. Bid from the table.',
   bidPrompt: 'How many tricks will you take?',
   bidCannotClose: 'Bids cannot add up to {n}.',
+  dealPrompt: 'Shuffling and dealing…',
   isBidding: '{name} is bidding…',
   isPlaying: '{name} is playing…',
   playACard: 'Play a card',
@@ -302,6 +311,8 @@ export const en: Messages = {
   suitHearts: 'hearts',
   suitClubs: 'clubs',
   errorConnect: 'Could not connect to the server.',
+  errorLocalServer:
+    'Could not reach the local server on port 4737. Run npm run dev, or npm run server in another terminal.',
   errorGeneric: 'Something went wrong.',
   errorWrongPhase: 'That action is not allowed right now.',
   errorNotYourTurn: 'It is not your turn.',

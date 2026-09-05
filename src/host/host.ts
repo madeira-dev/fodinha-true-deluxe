@@ -1,4 +1,4 @@
-import { applyAction, createMatch, MAX_PLAYERS, projectView } from '../engine';
+import { applyAction, createMatch, dealDurationMs, MAX_PLAYERS, projectView } from '../engine';
 import type { Game, GameView } from '../engine';
 import type {
   AdvanceOptions,
@@ -35,10 +35,13 @@ export class MatchHost {
   private listeners = new Map<string, Set<HostListener>>();
   private game: Game | null = null;
   private readonly defaultSeed: number | null;
+  private readonly skipDealAnimation: boolean;
+  private dealTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: CreateHostOptions = {}) {
     this.roomId = options.roomId ?? generateId('room');
     this.defaultSeed = options.seed ?? null;
+    this.skipDealAnimation = Boolean(options.skipDealAnimation);
   }
 
   join(options: JoinOptions): { playerId: string } {
@@ -150,6 +153,7 @@ export class MatchHost {
       seed: seed === null ? undefined : seed,
       deck: options.deck,
     });
+    this.afterDeal();
     this.publish();
     return ok();
   }
@@ -161,10 +165,14 @@ export class MatchHost {
     if (!this.game) {
       return this.reject(playerId, 'GAME_NOT_STARTED', 'The match has not started');
     }
-    return this.commit(
-      playerId,
-      applyAction(this.game, { type: 'ADVANCE', deck: options.deck }),
-    );
+    const result = applyAction(this.game, { type: 'ADVANCE', deck: options.deck });
+    if (!result.ok) {
+      return this.reject(playerId, result.error.code, result.error.message);
+    }
+    this.game = result.state;
+    this.afterDeal();
+    this.publish();
+    return ok();
   }
 
   private leave(playerId: string): HandleResult {
@@ -201,6 +209,45 @@ export class MatchHost {
     const error: HostError = { code, message };
     this.emit(playerId, { type: 'ERROR', error });
     return { ok: false, error };
+  }
+
+  private afterDeal(): void {
+    if (!this.game || this.game.phase !== 'DEALING') {
+      return;
+    }
+    this.clearDealTimer();
+    if (this.skipDealAnimation) {
+      const finished = applyAction(this.game, { type: 'FINISH_DEAL' });
+      if (finished.ok) {
+        this.game = finished.state;
+      }
+      return;
+    }
+    const ms = dealDurationMs({
+      cardsPerPlayer: this.game.cardsPerPlayer,
+      direction: this.game.direction,
+      dealerId: this.game.players[this.game.dealerIndex].id,
+      players: this.game.players,
+    });
+    this.dealTimer = setTimeout(() => {
+      this.dealTimer = null;
+      if (!this.game || this.game.phase !== 'DEALING') {
+        return;
+      }
+      const finished = applyAction(this.game, { type: 'FINISH_DEAL' });
+      if (!finished.ok) {
+        return;
+      }
+      this.game = finished.state;
+      this.publish();
+    }, ms);
+  }
+
+  private clearDealTimer(): void {
+    if (this.dealTimer !== null) {
+      clearTimeout(this.dealTimer);
+      this.dealTimer = null;
+    }
   }
 
   private commit(

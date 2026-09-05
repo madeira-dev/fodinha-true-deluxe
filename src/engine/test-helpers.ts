@@ -20,8 +20,15 @@ export function apply(state: Game, action: Action): Game {
   return result.state;
 }
 
+export function finishDeal(state: Game): Game {
+  if (state.phase !== 'DEALING') {
+    return state;
+  }
+  return apply(state, { type: 'FINISH_DEAL' });
+}
+
 export function predictAll(state: Game, values: Record<string, number>): Game {
-  let next = state;
+  let next = finishDeal(state);
   while (next.phase === 'PREDICTION' && next.currentPlayerId) {
     const value = values[next.currentPlayerId];
     if (value === undefined) {
