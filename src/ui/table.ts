@@ -70,6 +70,9 @@ export function renderGameTable(
         ),
       ),
     ),
+    view.phase === 'SCORING' || view.phase === 'FINISHED'
+      ? renderRoundSummary(view, letterDeltas, handlers)
+      : null,
     renderHandDock(view, handlers),
   );
 }
@@ -264,11 +267,9 @@ function renderCenter(
     );
   } else if (view.phase === 'PLAYING' && yourTurn) {
     children.push(el('p', { class: 'center-wait' }, t('playACard')));
-  } else if (view.phase === 'SCORING' || view.phase === 'FINISHED') {
-    children.push(renderScoreSheet(view, letterDeltas, handlers));
   }
 
-  if (view.phase === 'PLAYING') {
+  if (view.phase === 'PLAYING' || view.phase === 'SCORING' || view.phase === 'FINISHED') {
     children.push(renderLastTrickNote(view));
   }
 
@@ -335,14 +336,17 @@ export function visibleTrick(
   if (view.currentTrick && view.currentTrick.plays.length > 0) {
     return view.currentTrick;
   }
-  if (view.phase !== 'PLAYING' || !options.showSettledTrick) {
-    return null;
-  }
   const last = view.completedTricks[view.completedTricks.length - 1];
   if (!last || last.plays.length === 0) {
     return null;
   }
-  return last;
+  if (view.phase === 'SCORING' || view.phase === 'FINISHED') {
+    return last;
+  }
+  if (view.phase === 'PLAYING' && options.showSettledTrick) {
+    return last;
+  }
+  return null;
 }
 
 function renderTrickCards(
@@ -408,39 +412,65 @@ function renderLastTrickNote(view: GameView): HTMLElement | null {
   return el('p', { class: 'trick-note' }, t('takesTrick', { name: nameOf(view, last.winnerId) }));
 }
 
-function renderScoreSheet(
+function renderRoundSummary(
   view: GameView,
   letterDeltas: Record<string, number>,
   handlers: GameTableHandlers,
 ): HTMLElement {
+  const last = view.completedTricks[view.completedTricks.length - 1];
+  const lastNote = last
+    ? last.tied
+      ? t('tiedTrick')
+      : t('takesTrick', { name: nameOf(view, last.winnerId) })
+    : null;
+  const stake =
+    view.letterStake > 1
+      ? t('roundStakeMany', { n: view.letterStake })
+      : t('roundStakeOne');
+
   return el(
-    'div',
-    { class: 'score-sheet' },
-    el('h2', null, view.phase === 'FINISHED' ? finishTitle(view) : t('roundResults')),
+    'section',
+    { class: 'round-summary' },
     el(
-      'ul',
-      null,
-      ...view.players.map((player) => {
+      'header',
+      { class: 'summary-head' },
+      el('h2', null, view.phase === 'FINISHED' ? finishTitle(view) : t('roundResults')),
+      el(
+        'p',
+        { class: 'muted' },
+        [stake, lastNote].filter((item) => item).join(' · '),
+      ),
+    ),
+    el(
+      'div',
+      { class: 'summary-grid' },
+      el('span', { class: 'summary-label' }, t('summaryPlayer')),
+      el('span', { class: 'summary-label' }, t('summaryBid')),
+      el('span', { class: 'summary-label' }, t('summaryWon')),
+      el('span', { class: 'summary-label' }, t('summaryResult')),
+      el('span', { class: 'summary-label' }, t('summaryWord')),
+      ...view.players.reduce((rows: HTMLElement[], player) => {
         const delta = letterDeltas[player.id] || 0;
-        const result =
-          player.prediction === null
-            ? '—'
-            : player.prediction === player.tricksWon
-              ? t('exact')
-              : t(delta === 1 ? 'letterOne' : 'letterMany', { n: delta > 0 ? `+${delta}` : String(delta) });
-        return el(
-          'li',
-          { class: player.eliminated ? 'eliminated' : '' },
-          el('strong', null, player.displayName),
+        const hit = player.prediction !== null && player.prediction === player.tricksWon;
+        const result = hit
+          ? t('exact')
+          : t(delta === 1 ? 'letterOne' : 'letterMany', {
+              n: delta > 0 ? `+${delta}` : String(delta),
+            });
+        const status = player.eliminated ? t('summaryOut') : t('summarySafe');
+        rows.push(
+          el('strong', { class: player.eliminated ? 'eliminated' : '' }, player.displayName),
+          el('span', null, player.prediction === null ? '—' : String(player.prediction)),
+          el('span', null, String(player.tricksWon)),
+          el('span', { class: hit ? 'exact' : 'miss' }, result),
           el(
             'span',
-            null,
-            t('bidWord', { value: player.prediction === null ? '—' : String(player.prediction) }),
+            { class: player.eliminated ? 'miss' : 'muted' },
+            `${player.penaltyWord || '—'} · ${status}`,
           ),
-          el('span', null, t('wonWord', { value: player.tricksWon })),
-          el('span', { class: delta === 0 ? 'exact' : 'miss' }, result),
         );
-      }),
+        return rows;
+      }, []),
     ),
     view.phase === 'SCORING'
       ? el('button', { class: 'primary', click: () => handlers.onAdvance() }, t('nextRound'))

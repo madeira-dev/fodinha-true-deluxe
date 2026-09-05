@@ -323,7 +323,7 @@ describe('renderGameTable', () => {
     expect(root.querySelector('.trick-card')).toBeNull();
   });
 
-  it('does not keep played cards on top of the round results', () => {
+  it('keeps the last trick on the table when the round is scored', () => {
     const you = player({ id: 'a', displayName: 'Ana', handCount: 0 });
     const root = renderGameTable(
       view({
@@ -346,7 +346,7 @@ describe('renderGameTable', () => {
         legalPredictions: null,
       }),
       'a',
-      {},
+      { a: 0, b: 1 },
       {
         onPredict: () => undefined,
         onPlay: () => undefined,
@@ -354,7 +354,9 @@ describe('renderGameTable', () => {
       },
     );
 
-    expect(root.querySelector('.score-sheet')).not.toBeNull();
-    expect(root.querySelector('.trick-card')).toBeNull();
+    const cards = Array.from(root.querySelectorAll('.trick-card')) as HTMLElement[];
+    expect(cards.map((card) => card.getAttribute('data-card-id'))).toEqual(['c1', 'c2']);
+    expect(root.querySelector('.round-summary')).not.toBeNull();
+    expect(root.querySelector('.felt-center .round-summary, .felt-center .score-sheet')).toBeNull();
   });
 });

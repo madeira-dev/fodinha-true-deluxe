@@ -81,6 +81,13 @@ export interface Messages {
   hudLine: string;
   roundStakeOne: string;
   roundStakeMany: string;
+  summaryPlayer: string;
+  summaryBid: string;
+  summaryWon: string;
+  summaryResult: string;
+  summaryWord: string;
+  summaryOut: string;
+  summarySafe: string;
   faceDownCard: string;
   cardOf: string;
   suitDiamonds: string;
@@ -192,6 +199,13 @@ export const ptBR: Messages = {
   hudLine: 'Rodada {n} · {cards} · {phase} · Vira {vira} · {stake}',
   roundStakeOne: 'Vale 1 letra',
   roundStakeMany: 'Vale {n} letras',
+  summaryPlayer: 'Jogador',
+  summaryBid: 'Palpite',
+  summaryWon: 'Vazas',
+  summaryResult: 'Resultado',
+  summaryWord: 'FODINHA',
+  summaryOut: 'eliminado',
+  summarySafe: 'continua',
   faceDownCard: 'Carta virada',
   cardOf: '{rank} de {suit}',
   suitDiamonds: 'ouros',
@@ -304,6 +318,13 @@ export const en: Messages = {
   hudLine: 'Round {n} · {cards} · {phase} · Vira {vira} · {stake}',
   roundStakeOne: 'Worth 1 letter',
   roundStakeMany: 'Worth {n} letters',
+  summaryPlayer: 'Player',
+  summaryBid: 'Bid',
+  summaryWon: 'Tricks',
+  summaryResult: 'Result',
+  summaryWord: 'FODINHA',
+  summaryOut: 'out',
+  summarySafe: 'safe',
   faceDownCard: 'Face-down card',
   cardOf: '{rank} of {suit}',
   suitDiamonds: 'diamonds',
